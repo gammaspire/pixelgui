@@ -1,0 +1,9 @@
+#---------------------------------- File paths ----------------------------------
+
+path_to_repos      /Users/k215c316/github/pixelgui/       # loc of GUI script (and miscellany) pulled from github
+initial_browsedir  /Users/k215c316/Desktop/pixel_art/  # where to direct GUI to begin browsing for .FITS files
+
+#---------------------------------- Parameters ----------------------------------
+
+init_offset             0.5                       # initial offset for grid lines to ensure correct alignment
+window_geometry    1050x650                       # size of GUI window, tweakable for different monitor sizes
