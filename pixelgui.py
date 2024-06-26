@@ -29,7 +29,7 @@ homedir = os.getenv('HOME')
 #create main window container, into which the first page will be placed.
 class App(tk.Tk):
     
-    def __init__(self, path_to_repos, initial_browsedir, window_geometry, init_offset):  #INITIALIZE; will always run when App class is called.
+    def __init__(self, path_to_repos, initial_browsedir, save_path, window_geometry, init_offset):  #INITIALIZE; will always run when App class is called.
         tk.Tk.__init__(self)     #initialize tkinter; *args are parameter arguments, **kwargs can be dictionary arguments
         
         self.title('Project Pixel: Generate Pixelated Images for Art')
@@ -45,7 +45,7 @@ class App(tk.Tk):
 
         ## Initialize Frames
         self.frames = {}     #empty dictionary
-        frame = MainPage(container, self, path_to_repos, initial_browsedir, init_offset)   #define frame  
+        frame = MainPage(container, self, path_to_repos, initial_browsedir, save_path, init_offset)   #define frame  
         self.frames[MainPage] = frame     #assign new dictionary entry {MainPage: frame}
         frame.grid(row=0,column=0,sticky='nsew')   #define where to place frame within the container...CENTER!
         for i in range(self.rowspan):
@@ -61,7 +61,7 @@ class App(tk.Tk):
 #inherits all from tk.Frame; will be on first window
 class MainPage(tk.Frame):    
     
-    def __init__(self, parent, controller, path_to_repos, initial_browsedir, init_offset):
+    def __init__(self, parent, controller, path_to_repos, initial_browsedir, save_path, init_offset):
         
         #defines the number of rows/columns to resize when resizing the entire window.
         self.rowspan=10
@@ -72,6 +72,9 @@ class MainPage(tk.Frame):
         #generalized parameters given in params.txt file
         self.path_to_repos = path_to_repos
         self.initial_browsedir = initial_browsedir
+        self.save_path = save_path
+        
+        self.savefig_counter = 0     #will use for filenames! 
         
         #first frame...
         tk.Frame.__init__(self,parent)
@@ -106,25 +109,51 @@ class MainPage(tk.Frame):
         self.init_display_size()   #creates canvas frame
         self.populate_params()     #creates parameter frame
     
+    #add trimming features!
+
+    def trim_widgets(self):
+        
+        #pixel values > threshold set to white (255), pixels < threshold set to black (0)
+        threshold_lab = tk.Label(self.frame_params,text='Trim Threshold',font='Arial 13').grid(row=0,column=0)
+        
+        self.threshold_val = tk.Entry(self.frame_params,width=5,borderwidth=2,
+                                      bg='black',fg='lime green',font='Arial 15')
+        self.threshold_val.insert(0,'1')
+        self.threshold_val.grid(row=0,column=1)
+        
+        self.trim_button = tk.Button(self.frame_params,text='Trim Preview',padx=5,pady=5,
+                                     font='Arial 18', command=self.im_trim_preview)
+        self.trim_button.grid(row=1,column=0,columnspan=2,sticky='ew')
+        
+        self.divider = tk.Label(self.frame_params,text='=================================', 
+                                font='Arial 13').grid(row=2,column=0,sticky='ew')
+    
     #add pixelation/resizing features
     def resize_widgets(self):
         
+        self.trimvar = tk.BooleanVar()   #initiate variable
+        
         npx_lab = tk.Label(self.frame_params,text='N Pixels',
-                           font='Arial 13').grid(row=0,column=0)
+                           font='Arial 13').grid(row=3,column=0)
         npx_lab = tk.Label(self.frame_params,text='(for x if x>y, y if y<x)',
-                           font='Arial 13').grid(row=1,column=0)
+                           font='Arial 13').grid(row=4,column=0)
         
         self.npx = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',font='Arial 15')
         self.npx.insert(0,'50')
-        self.npx.grid(row=0,column=1,rowspan=2)
+        self.npx.grid(row=3,column=1,rowspan=2)
+   
+        self.notrim_button = tk.Radiobutton(self.frame_params,text='No Image Trim',variable=self.trimvar,value=False)
+        self.notrim_button.grid(row=6,column=0)
         
-        self.pix_button = tk.Button(self.frame_params,text="Pixelate", padx=5, pady=5, 
+        self.trim_button = tk.Radiobutton(self.frame_params,text='Image Trim',variable=self.trimvar,value=True)
+        self.trim_button.grid(row=7,column=0)
+        
+        self.pix_button_trim = tk.Button(self.frame_params,text="Pixelate", padx=5, pady=5, 
                                         font='Arial 20', command=self.resize_im)
-        self.pix_button.grid(row=3,column=0,columnspan=2,sticky='ew')
+        self.pix_button_trim.grid(row=6,column=1,rowspan=2,columnspan=1)
         
-        
-        self.divider = tk.Label(self.frame_params,text='=======================', 
-                                font='Arial 13').grid(row=4,column=0,sticky='ew')
+        self.divider = tk.Label(self.frame_params,text='=================================', 
+                                font='Arial 13').grid(row=8,column=0,sticky='ew')
     
     #add grid checkbox to frame_params
     def grid_checkbox(self):
@@ -133,36 +162,60 @@ class MainPage(tk.Frame):
         self.gridcheck = tk.Checkbutton(self.frame_params,text='Add Gridlines',
                                         onvalue=1,offvalue=0,command=self.add_grid,
                                         variable=self.var,font='Arial 18')
-        self.gridcheck.grid(row=4,column=0,sticky='ew',columnspan=2)
+        self.gridcheck.grid(row=9,column=0,sticky='ew',columnspan=2)
     
     #add grid textbox to frame_params --> specify color of grid lines AND line spacing
     def grid_textbox(self):
         
-        linespacing_lab = tk.Label(self.frame_params,text='Line Spacing',font='Arial 13').grid(row=5,column=0)
-        color_grid_lab = tk.Label(self.frame_params,text='Grid Color',font='Arial 13').grid(row=6,column=0)
-        offset_val_lab = tk.Label(self.frame_params,text='Offset Value',font='Arial 13').grid(row=7,column=0)
+        linespacing_lab = tk.Label(self.frame_params,text='Line Spacing',font='Arial 13').grid(row=10,column=0)
+        color_grid_lab = tk.Label(self.frame_params,text='Grid Color',font='Arial 13').grid(row=11,column=0)
+        offset_val_lab = tk.Label(self.frame_params,text='Offset Value',font='Arial 13').grid(row=12,column=0)
         
         self.line_spacing = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                       font='Arial 15')
         self.line_spacing.insert(0,'1')
-        self.line_spacing.grid(row=5,column=1)
+        self.line_spacing.grid(row=10,column=1)
         
         self.color_grid = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                       font='Arial 15')
         self.color_grid.insert(0,'black')
-        self.color_grid.grid(row=6,column=1)
+        self.color_grid.grid(row=11,column=1)
         
         self.offset_val = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                    font='Arial 15')
         self.offset_val.insert(0,str(self.init_offset))
-        self.offset_val.grid(row=7,column=1)
+        self.offset_val.grid(row=12,column=1)
+        
+        self.divider = tk.Label(self.frame_params,text='=================================', 
+                                font='Arial 13').grid(row=13,column=0,sticky='ew')
         
     
+    def save_image(self):
+        
+        while os.path.exists('{}{:d}-pxd.png'.format(self.save_path+self.filename, self.savefig_counter)):
+            self.savefig_counter += 1
+            filename = '{}{:d}-pxd.png'.format(self.save_path+self.filename,self.savefig_counter)
+            self.fig.savefig(filename,dpi=100)
+            print(f'Figure saved to: {filename}')
+        else:
+            filename = '{}{:d}-pxd.png'.format(self.save_path+self.filename,self.savefig_counter)
+            self.fig.savefig(filename,dpi=100)
+            print(f'Figure saved to: {filename}')
+            
+    def add_save_button(self):
+        
+        self.save_button = tk.Button(self.frame_params, text='Save Result', padx=5, pady=5, font='Ariel 20',
+                                     command=self.save_image)
+        self.save_button.grid(row=14,column=0,columnspan=2,sticky='ew')
+
+
+    
     def populate_params(self):
+        self.trim_widgets()
         self.resize_widgets()
         self.grid_checkbox()    
         self.grid_textbox()
-    
+        self.add_save_button()
     
     #add browsing textbox to frame_buttons
     def im_to_display(self):
@@ -202,7 +255,7 @@ class MainPage(tk.Frame):
         self.ax = self.fig.add_subplot()
         self.im = self.ax.imshow(np.zeros(100).reshape(10,10))
         self.ax.set_title('Click "Browse" to the right to begin!',fontsize=15)
-        self.text = self.ax.text(x=2.2,y=4.8,s='Your Image \n Goes Here',color='red',fontsize=25)
+        self.text = self.ax.text(x=2.8,y=4.8,s='Your Image \n Goes Here',color='red',fontsize=25)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_display) 
 
         #add canvas 'frame'
@@ -239,9 +292,6 @@ class MainPage(tk.Frame):
 
         self.ax.set_title(f'{self.filename}',fontsize=15)
 
-        #self.im_x, self.im_y = np.shape(self.img_array)[1], np.shape(self.img_array)[0]
-        #print('img dimensions', (self.im_x, self.im_y))
-
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_display)    
 
         #add canvas 'frame'
@@ -270,23 +320,66 @@ class MainPage(tk.Frame):
         else:
             print("I don't know what to tell ye. Your width and/or height are not numbers.")
             return None
+
+    
+    def im_trim(self):        #...thank you, chatgpt.
+        
+        try:
+            #reshape image array to (number of pixels, number of channels)
+            pixels = self.img_array.reshape(-1, self.img_array.shape[2])
+            
+            #find most common color -- ASSUMED to be background color!
+            unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
+            background_color = unique_colors[counts.argmax()]
+            
+            #create new image with background color (I *think* it only contains that background color)
+            bg = Image.new(self.img_only.mode, self.img_only.size, tuple(background_color))
+        
+        #if any steps beget errors, then claim the background color is the color of the upper left px
+        except:
+            bg = Image.new(self.img_only.mode, self.img_only.size, self.img_only.getpixel((0,0)))
+            
+        #subtract background from image
+        diff = ImageChops.difference(self.img_only, bg)
+        
+        #convert difference to grayscale...I guess.
+        diff = diff.convert('L')
+        
+        #threshold difference image to create a binary image
+        #pixel values > threshold set to white (255), pixels < threshold set to black (0)
+        threshold = float(self.threshold_val.get())
+        
+        #get bounding box of non-background region
+        bbox = diff.getbbox()
+        
+        if bbox:
+            self.img_only = self.img_only.crop(bbox)
+            self.img_array = np.asarray(self.img_only)
+        else:
+            print("No content found to trim - retaining original image dimension.")
+                
+    def im_trim_preview(self):
+        
+        self.im_trim()
+        self.draw_im_canvas()
     
     #resizing the image and recreating the canvas.
     def resize_im(self):
-        
         self.img_firstpass()
         
+        if self.trimvar.get():
+            self.im_trim()
+
         self.frac_h, self.frac_w = self.get_scaling_fraction() 
         self.npixels = int(self.npx.get())
         
         #resize "smoothly" down to desired number of pixels for x (nx*frac_w) and y (nx*frac_h)
         #resample options: NEAREST, BILINEAR, BICUBIX, LANCZOS, BOX, HAMMING
-        self.img_scaled = self.img_only.resize((int(self.npixels*self.frac_w), 
+        self.img_only = self.img_only.resize((int(self.npixels*self.frac_w), 
                                                 int(self.npixels*self.frac_h)),
                                                resample=Image.NEAREST)
         
-        self.img_array = np.asarray(self.img_scaled)
-        
+        self.img_array = np.asarray(self.img_only)
         self.draw_im_canvas()
         
         
@@ -372,16 +465,17 @@ if __name__ == "__main__":
         #extract parameters and assign to variables...
         path_to_repos = param_dict['path_to_repos']
         initial_browsedir = param_dict['initial_browsedir']
+        save_path = param_dict['save_path']
         window_geometry = param_dict['window_geometry']
         init_offset = param_dict['init_offset']
         
-        app = App(path_to_repos, initial_browsedir, window_geometry, init_offset)
+        app = App(path_to_repos, initial_browsedir, save_path, window_geometry, init_offset)
         app.mainloop()
         
         
 #add following features:
+#TRIM WHITE SPACE! include that parameter thingy...
 #checkbox to flip x-axis 
-#slider to change spaces between grid lines (i.e., how many grid lines are shown)
+#slider to change spaces between grid lines (i.e., how many grid lines are shown)?
 #widget with +1, -1 increments for desired px cells on x or y axis
 #choose number of representing colors...trying to avoid grays. commit to black or white!
-#save button!
