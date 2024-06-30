@@ -121,12 +121,12 @@ class MainPage(tk.Frame):
         self.threshold_val.insert(0,'1')
         self.threshold_val.grid(row=0,column=1)
         
-        self.trim_button = tk.Button(self.frame_params,text='Trim Preview',padx=5,pady=5,
+        self.trim_button = tk.Button(self.frame_params,text='Trim Preview',padx=2,pady=5,
                                      font='Arial 18', command=self.im_trim_preview)
-        self.trim_button.grid(row=1,column=0,columnspan=2,sticky='ew')
+        self.trim_button.grid(row=1,column=1,columnspan=1)
         
         self.divider = tk.Label(self.frame_params,text='=================================', 
-                                font='Arial 13').grid(row=2,column=0,sticky='ew')
+                                font='Arial 13').grid(row=2,column=0,columnspan=2,sticky='ew')
     
     #add pixelation/resizing features
     def resize_widgets(self):
@@ -141,19 +141,27 @@ class MainPage(tk.Frame):
         self.npx = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',font='Arial 15')
         self.npx.insert(0,'50')
         self.npx.grid(row=3,column=1,rowspan=2)
+        
+        ncolor_lab = tk.Label(self.frame_params,text='N Colors',
+                              font='Arial 13').grid(row=5,column=0)
+        ncolor_lab = tk.Label(self.frame_params,text='(Leave Blank for Default)',
+                              font='Arial 13').grid(row=6,column=0)
+        
+        self.ncolor = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',font='Arial 15')
+        self.ncolor.grid(row=5,column=1,rowspan=2)
    
         self.notrim_button = tk.Radiobutton(self.frame_params,text='No Image Trim',variable=self.trimvar,value=False)
-        self.notrim_button.grid(row=6,column=0)
+        self.notrim_button.grid(row=7,column=0)
         
         self.trim_button = tk.Radiobutton(self.frame_params,text='Image Trim',variable=self.trimvar,value=True)
-        self.trim_button.grid(row=7,column=0)
+        self.trim_button.grid(row=8,column=0)
         
         self.pix_button_trim = tk.Button(self.frame_params,text="Pixelate", padx=5, pady=5, 
                                         font='Arial 20', command=self.resize_im)
-        self.pix_button_trim.grid(row=6,column=1,rowspan=2,columnspan=1)
+        self.pix_button_trim.grid(row=7,column=1,rowspan=2,columnspan=1)
         
         self.divider = tk.Label(self.frame_params,text='=================================', 
-                                font='Arial 13').grid(row=8,column=0,sticky='ew')
+                                font='Arial 13').grid(row=9,column=0,columnspan=2,sticky='ew')
     
     #add grid checkbox to frame_params
     def grid_checkbox(self):
@@ -162,33 +170,43 @@ class MainPage(tk.Frame):
         self.gridcheck = tk.Checkbutton(self.frame_params,text='Add Gridlines',
                                         onvalue=1,offvalue=0,command=self.add_grid,
                                         variable=self.var,font='Arial 18')
-        self.gridcheck.grid(row=9,column=0,sticky='ew',columnspan=2)
+        self.gridcheck.grid(row=15,column=0,sticky='ew',columnspan=1)
     
     #add grid textbox to frame_params --> specify color of grid lines AND line spacing
     def grid_textbox(self):
         
-        linespacing_lab = tk.Label(self.frame_params,text='Line Spacing',font='Arial 13').grid(row=10,column=0)
-        color_grid_lab = tk.Label(self.frame_params,text='Grid Color',font='Arial 13').grid(row=11,column=0)
-        offset_val_lab = tk.Label(self.frame_params,text='Offset Value',font='Arial 13').grid(row=12,column=0)
-        
+        linespacing_lab = tk.Label(self.frame_params,text='Line Spacing',font='Arial 13').grid(row=12,column=0)
+        color_grid_lab = tk.Label(self.frame_params,text='Grid Color',font='Arial 13').grid(row=13,column=0)
+        offset_val_lab = tk.Label(self.frame_params,text='Offset Value',font='Arial 13').grid(row=14,column=0)
+
         self.line_spacing = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                       font='Arial 15')
         self.line_spacing.insert(0,'1')
-        self.line_spacing.grid(row=10,column=1)
+        self.line_spacing.grid(row=12,column=1)
         
         self.color_grid = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                       font='Arial 15')
         self.color_grid.insert(0,'black')
-        self.color_grid.grid(row=11,column=1)
+        self.color_grid.grid(row=13,column=1)
         
         self.offset_val = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                    font='Arial 15')
         self.offset_val.insert(0,str(self.init_offset))
-        self.offset_val.grid(row=12,column=1)
+        self.offset_val.grid(row=14,column=1)
         
         self.divider = tk.Label(self.frame_params,text='=================================', 
-                                font='Arial 13').grid(row=13,column=0,sticky='ew')
+                                font='Arial 13').grid(row=16,column=0,columnspan=2,sticky='ew')
         
+    
+    #add x-flip checkbox to frame_params
+    def flip_checkbox(self):
+
+        self.flipvar = tk.BooleanVar()   #initiate variable
+        
+        self.flipcheck = tk.Checkbutton(self.frame_params,text='Flip X-Axis',
+                                        onvalue=True,offvalue=False,command=self.flip_xaxis,
+                                        variable=self.flipvar,font='Arial 18')
+        self.flipcheck.grid(row=11,column=0,sticky='ew',columnspan=1)
     
     def save_image(self):
         
@@ -206,7 +224,7 @@ class MainPage(tk.Frame):
         
         self.save_button = tk.Button(self.frame_params, text='Save Result', padx=5, pady=5, font='Ariel 20',
                                      command=self.save_image)
-        self.save_button.grid(row=14,column=0,columnspan=2,sticky='ew')
+        self.save_button.grid(row=17,column=1,columnspan=1,sticky='ew')
 
 
     
@@ -215,7 +233,9 @@ class MainPage(tk.Frame):
         self.resize_widgets()
         self.grid_checkbox()    
         self.grid_textbox()
+        self.flip_checkbox()
         self.add_save_button()
+        
     
     #add browsing textbox to frame_buttons
     def im_to_display(self):
@@ -285,13 +305,19 @@ class MainPage(tk.Frame):
         self.label.delete('all')
         self.ax.remove()
 
+        #reset checkboxes
+        self.gridcheck.deselect()
+        self.flipcheck.deselect()
+        
         self.ax = self.fig.add_subplot()
         self.im = self.ax.imshow(np.flipud(self.img_array),origin='lower')
-        self.ax.set_xlim(0,np.shape(self.img_array)[1]-1)
-        self.ax.set_ylim(0,np.shape(self.img_array)[0]-1)
+        #self.ax.set_xlim(0,np.shape(self.img_array)[1]-1)
+        #self.ax.set_ylim(0,np.shape(self.img_array)[0]-1)
 
         self.ax.set_title(f'{self.filename}',fontsize=15)
-
+        
+        self.create_axislabels()
+        
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_display)    
 
         #add canvas 'frame'
@@ -379,18 +405,74 @@ class MainPage(tk.Frame):
                                                 int(self.npixels*self.frac_h)),
                                                resample=Image.NEAREST)
         
+        try:
+            self.img_only = self.img_only.quantize(colors=int(self.ncolor.get()))
+            self.img_only = self.img_only.convert('RGB')
+
+        except:
+            print('Textbox Empty: Reverting to Default Colors.')
+        
         self.img_array = np.asarray(self.img_only)
         self.draw_im_canvas()
+    
+    def flip_xaxis(self):
         
+        self.create_axislabels()
+        offset = float(self.offset_val.get())
         
+        if self.flipvar.get():
+            self.ax.set_xlim(np.shape(self.img_array)[1]-offset,0)
+        else:
+            self.ax.set_xlim(0,np.shape(self.img_array)[1]-offset)
+        
+        self.ax.tick_params(labelsize=12)
+        self.ax.set_xticks(self.xticks,labels=self.xlabels,fontsize=12)
+        self.ax.set_yticks(self.yticks,labels=self.ylabels,fontsize=12)
+        self.canvas.draw()
+    
+    def create_axislabels(self):
+        
+        line_spacing = int(self.line_spacing.get())
+        offset = float(self.offset_val.get())
+        
+        self.xticks = []
+        self.yticks = []
+        self.xlabels = []
+        self.ylabels = []
+        
+        #the lim will help prevent tick label crowding for LARGE images. :-)
+        lim = 10 if ((np.shape(self.img_array)[0]<250)&(np.shape(self.img_array)[1]<250)) else 100
+        
+        #set up y ticks and y labels
+        for n in range(0,np.shape(self.img_array)[0],line_spacing):
+            #for labels --> only include 0s and multiples of 10.
+            if n==0:
+                self.yticks.append(n-offset)
+                self.ylabels.append(n)
+            if (n+1)%int(lim)==0:
+                self.yticks.append(n+offset)
+                self.ylabels.append(n+1)
+        
+        #set up x ticks and x labels
+        for n in range(0,np.shape(self.img_array)[1],line_spacing):
+            #for labels --> only include 0s and multiples of 10.
+            if n==0:
+                self.xticks.append(n-offset)
+                self.xlabels.append(n)
+            if (n+1)%int(lim)==0:
+                self.xticks.append(n+offset)
+                self.xlabels.append(n+1)
+            
+        self.ax.tick_params(labelsize=12)
+        self.ax.set_xticks(self.xticks,labels=self.xlabels,fontsize=12)
+        self.ax.set_yticks(self.yticks,labels=self.ylabels,fontsize=12)
+                    
+    
     def add_grid(self):
         
         if self.var.get()==1:
-        
-            self.xticks = []
-            self.yticks = []
-            self.xlabels = []
-            self.ylabels = []
+            
+            self.create_axislabels()
             
             user_color = self.color_grid.get()
             line_spacing = int(self.line_spacing.get())
@@ -399,33 +481,16 @@ class MainPage(tk.Frame):
             self.xlines = []
             self.ylines = []
     
-            #set y gridlines and labels
+            #set y gridlines
             for n in range(0,np.shape(self.img_array)[0],line_spacing):
                 line = self.ax.axhline(n+offset,lw=1,color=user_color,alpha=0.3)
                 self.xlines.append(line)
-                
-                #for labels --> only include 0s and multiples of 10.
-                if n==0:
-                    self.yticks.append(n-offset)
-                    self.ylabels.append(n)
-                if (n+1)%10==0:
-                    self.yticks.append(n+offset)
-                    self.ylabels.append(n+1)
-           
-            #set x gridlines and labels
+
+            #set x gridlines
             for n in range(0,np.shape(self.img_array)[1],line_spacing):
-                
                 line = self.ax.axvline(n+offset,lw=1,color=user_color,alpha=0.3)
                 self.ylines.append(line)    
                     
-                #for labels --> only include 0s and multiples of 10.
-                if n==0:
-                    self.xticks.append(n-offset)
-                    self.xlabels.append(n)
-                if (n+1)%10==0:
-                    self.xticks.append(n+offset)
-                    self.xlabels.append(n+1)
-            
             self.ax.tick_params(labelsize=15)
             self.ax.set_xticks(self.xticks,labels=self.xlabels,fontsize=15)
             self.ax.set_yticks(self.yticks,labels=self.ylabels,fontsize=15)
@@ -435,10 +500,10 @@ class MainPage(tk.Frame):
         else:
             for n in self.xlines:
                 n.remove()
-                self.ax.xaxis.set_major_locator(ticker.AutoLocator())
+                #self.ax.xaxis.set_major_locator(ticker.AutoLocator())
             for n in self.ylines:
                 n.remove()
-                self.ax.yaxis.set_major_locator(ticker.AutoLocator())
+                #self.ax.yaxis.set_major_locator(ticker.AutoLocator())
             self.canvas.draw()
             
 if __name__ == "__main__":
@@ -474,7 +539,6 @@ if __name__ == "__main__":
         
         
 #add following features:
-#TRIM WHITE SPACE! include that parameter thingy...
 #checkbox to flip x-axis 
 #slider to change spaces between grid lines (i.e., how many grid lines are shown)?
 #widget with +1, -1 increments for desired px cells on x or y axis
