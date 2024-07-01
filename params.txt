@@ -6,4 +6,4 @@ save_path          /Users/k215c316/Desktop/               #where to save pixelat
 #---------------------------------- Parameters ----------------------------------
 
 init_offset             0.5                       # initial offset for grid lines to ensure correct alignment
-window_geometry    1050x650                       # size of GUI window, tweakable for different monitor sizes
+window_geometry    1070x650                       # size of GUI window, tweakable for different monitor sizes
