@@ -22,7 +22,6 @@ import glob
 
 import matplotlib.ticker as ticker
 from PIL import Image, ImageChops
-import cv2
 
 homedir = os.getenv('HOME')
 
@@ -283,7 +282,7 @@ class MainPage(tk.Frame):
         #self.fig.subplots_adjust(left=0.06, right=0.94, top=0.94, bottom=0.06)
 
         self.ax = self.fig.add_subplot()
-        self.im = self.ax.imshow(np.zeros(100).reshape(10,10))
+        self.im = self.ax.imshow(np.zeros(100).reshape(10,10),origin='lower')
         self.ax.set_title('Click "Browse" to the right to begin!',fontsize=15)
         self.text = self.ax.text(x=2.8,y=4.8,s='Your Image \n Goes Here',color='red',fontsize=25)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_display) 
@@ -345,19 +344,18 @@ class MainPage(tk.Frame):
         self.height = np.shape(self.img_array)[0]
         self.width = np.shape(self.img_array)[1]
         
-        if self.height>self.width:
+        if (self.height>self.width) & ((self.width/self.height)<0.995):
             fraction = self.width/self.height
             return 1, fraction
-        elif self.height<self.width:
+        elif (self.height<self.width) & ((self.height/self.width)<0.99):
             fraction = self.height/self.width
             return fraction, 1
-        elif self.height==self.width:
+        elif (self.height==self.width) | ((self.width/self.height)>0.99) | ((self.height/self.width)>0.99):
             return 1, 1
         else:
             print("I don't know what to tell ye. Your width and/or height are not numbers.")
             return None
 
-    
     def im_trim(self):        #...thank you, chatgpt.
         
         try:
@@ -384,6 +382,8 @@ class MainPage(tk.Frame):
         #threshold difference image to create a binary image
         #pixel values > threshold set to white (255), pixels < threshold set to black (0)
         threshold = float(self.threshold_val.get())
+        
+        diff = diff.point(lambda p: p > threshold and 255)
         
         #get bounding box of non-background region
         bbox = diff.getbbox()
@@ -414,6 +414,7 @@ class MainPage(tk.Frame):
         self.img_only = self.img_only.resize((int(self.npixels*self.frac_w), 
                                                 int(self.npixels*self.frac_h)),
                                                resample=Image.NEAREST)
+        
         
         try:
             self.img_only = self.img_only.quantize(colors=int(self.ncolor.get()))
@@ -466,7 +467,7 @@ class MainPage(tk.Frame):
         self.ylabels = []
         
         #the lim will help prevent tick label crowding for LARGE images. :-)
-        lim = 10 if ((np.shape(self.img_array)[0]<250)&(np.shape(self.img_array)[1]<250)) else 100
+        lim = 10 if ((np.shape(self.img_array)[0]<250)&(np.shape(self.img_array)[1]<250)) else 150
         
         #set up y ticks and y labels
         for n in range(0,np.shape(self.img_array)[0],line_spacing):
@@ -508,12 +509,12 @@ class MainPage(tk.Frame):
     
             #set y gridlines
             for n in range(0,np.shape(self.img_array)[0],line_spacing):
-                line = self.ax.axhline(n+offset,lw=3,color=user_color,alpha=0.3)
+                line = self.ax.axhline(n+offset,lw=1,color=user_color,alpha=0.6)
                 self.xlines.append(line)
 
             #set x gridlines
             for n in range(0,np.shape(self.img_array)[1],line_spacing):
-                line = self.ax.axvline(n+offset,lw=3,color=user_color,alpha=0.3)
+                line = self.ax.axvline(n+offset,lw=1,color=user_color,alpha=0.6)
                 self.ylines.append(line)    
                     
             self.ax.tick_params(labelsize=15)
