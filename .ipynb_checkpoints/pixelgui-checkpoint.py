@@ -23,6 +23,8 @@ import glob
 import matplotlib.ticker as ticker
 from PIL import Image, ImageChops
 
+from skimage.filters import threshold_otsu
+
 homedir = os.getenv('HOME')
 
 #create main window container, into which the first page will be placed.
@@ -321,7 +323,7 @@ class MainPage(tk.Frame):
         self.graycheck.deselect()
         
         self.ax = self.fig.add_subplot()
-        self.im = self.ax.imshow(np.flipud(self.img_array),origin='lower')
+        self.im = self.ax.imshow(np.flipud(self.img_array),origin='lower',cmap='gray')
 
         self.ax.set_title(f'{self.filename}',fontsize=15)
         
@@ -344,7 +346,7 @@ class MainPage(tk.Frame):
         self.height = np.shape(self.img_array)[0]
         self.width = np.shape(self.img_array)[1]
         
-        if (self.height>self.width) & ((self.width/self.height)<0.995):
+        if (self.height>self.width) & ((self.width/self.height)<0.99):
             fraction = self.width/self.height
             return 1, fraction
         elif (self.height<self.width) & ((self.height/self.width)<0.99):
@@ -417,11 +419,23 @@ class MainPage(tk.Frame):
         
         
         try:
-            self.img_only = self.img_only.quantize(colors=int(self.ncolor.get()))
-            self.img_only = self.img_only.convert('RGB')
+            #I assume users who select ncolor=2 are wanting a black/white BINARY image! 
+            if int(self.ncolor.get())==2:
+                self.img_only = self.img_only.convert('L')
+                
+                #the otsu threshold helps to automate the process of selecting which pixels are assigned 
+                #to white, and which to black.
+                otsu_threshold = threshold_otsu(np.asarray(self.img_only))
+                
+                #assign black if x>threshold and 0 if x<threshold, where x is the pixel value
+                self.img_only = self.img_only.point(lambda x: 255 if x>otsu_threshold else 0,mode='1')
+            else:
+                #otherwise, proceed as normal. :-)
+                self.img_only = self.img_only.quantize(colors=int(self.ncolor.get()))
+                self.img_only = self.img_only.convert('RGB')
 
         except:
-            print('Textbox Empty: Reverting to Default Colors.')
+            self.img_only = self.img_only
         
         self.img_array = np.asarray(self.img_only)
         self.draw_im_canvas()
