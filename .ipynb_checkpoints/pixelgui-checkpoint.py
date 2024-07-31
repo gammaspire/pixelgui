@@ -159,7 +159,7 @@ class MainPage(tk.Frame):
         
         self.pix_button_trim = tk.Button(self.frame_params,text="Pixelate", padx=5, pady=5, 
                                         font='Arial 20', command=self.resize_im)
-        self.pix_button_trim.grid(row=7,column=1,rowspan=2,columnspan=1)
+        self.pix_button_trim.grid(row=7,column=1,rowspan=2,columnspan=2)
         
         self.divider = tk.Label(self.frame_params,text='========================================', 
                                 font='Arial 11').grid(row=9,column=0,columnspan=2,sticky='ew')
@@ -171,32 +171,38 @@ class MainPage(tk.Frame):
         self.gridcheck = tk.Checkbutton(self.frame_params,text='Add Gridlines',
                                         onvalue=1,offvalue=0,command=self.add_grid,
                                         variable=self.var,font='Arial 18')
-        self.gridcheck.grid(row=17,column=0,sticky='ew',columnspan=2)
+        self.gridcheck.grid(row=18,column=0,sticky='ew',columnspan=2)
     
     #add grid textbox to frame_params --> specify color of grid lines AND line spacing
     def grid_textbox(self):
         
         linespacing_lab = tk.Label(self.frame_params,text='Line Spacing',font='Arial 13').grid(row=14,column=0)
-        color_grid_lab = tk.Label(self.frame_params,text='Grid Color',font='Arial 13').grid(row=15,column=0)
-        offset_val_lab = tk.Label(self.frame_params,text='Offset Value',font='Arial 13').grid(row=16,column=0)
+        linethickness_lab = tk.Label(self.frame_params,text='Line Thickness',font='Arial 13').grid(row=15,column=0)
+        color_grid_lab = tk.Label(self.frame_params,text='Grid Color',font='Arial 13').grid(row=16,column=0)
+        offset_val_lab = tk.Label(self.frame_params,text='Offset Value',font='Arial 13').grid(row=17,column=0)
 
         self.line_spacing = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                       font='Arial 15')
         self.line_spacing.insert(0,'1')
         self.line_spacing.grid(row=14,column=1)
         
+        self.line_thickness = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
+                                       font='Arial 15')
+        self.line_thickness.insert(0,'1')
+        self.line_thickness.grid(row=15,column=1)
+        
         self.color_grid = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                       font='Arial 15')
         self.color_grid.insert(0,'black')
-        self.color_grid.grid(row=15,column=1)
+        self.color_grid.grid(row=16,column=1)
         
         self.offset_val = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                    font='Arial 15')
         self.offset_val.insert(0,str(self.init_offset))
-        self.offset_val.grid(row=16,column=1)
+        self.offset_val.grid(row=17,column=1)
         
         self.divider = tk.Label(self.frame_params,text='========================================', 
-                                font='Arial 11').grid(row=18,column=0,columnspan=2,sticky='ew')
+                                font='Arial 11').grid(row=19,column=0,columnspan=2,sticky='ew')
         
     
     #add x-flip checkbox to frame_params
@@ -235,7 +241,7 @@ class MainPage(tk.Frame):
         
         self.save_button = tk.Button(self.frame_params, text='Save Result', padx=5, pady=5, font='Ariel 20',
                                      command=self.save_image)
-        self.save_button.grid(row=19,column=0,columnspan=2,sticky='ew')
+        self.save_button.grid(row=20,column=0,columnspan=2,sticky='ew')
 
 
     def populate_params(self):
@@ -286,7 +292,8 @@ class MainPage(tk.Frame):
         self.ax = self.fig.add_subplot()
         self.im = self.ax.imshow(np.zeros(100).reshape(10,10),origin='lower')
         self.ax.set_title('Click "Browse" to the right to begin!',fontsize=15)
-        self.text = self.ax.text(x=2.8,y=4.8,s='Your Image \n Goes Here',color='red',fontsize=25)
+        self.text = self.ax.text(x=2.8,y=5.0,s='Your Image',color='red',fontsize=28)
+        self.text = self.ax.text(x=2.9,y=4.1,s='Goes Here',color='red',fontsize=28)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.frame_display) 
 
         #add canvas 'frame'
@@ -517,18 +524,19 @@ class MainPage(tk.Frame):
             user_color = self.color_grid.get()
             line_spacing = int(self.line_spacing.get())
             offset = float(self.offset_val.get())
+            line_thickness = float(self.line_thickness.get())
             
             self.xlines = []
             self.ylines = []
     
             #set y gridlines
             for n in range(0,np.shape(self.img_array)[0],line_spacing):
-                line = self.ax.axhline(n+offset,lw=1,color=user_color,alpha=0.6)
+                line = self.ax.axhline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
                 self.xlines.append(line)
 
             #set x gridlines
             for n in range(0,np.shape(self.img_array)[1],line_spacing):
-                line = self.ax.axvline(n+offset,lw=1,color=user_color,alpha=0.6)
+                line = self.ax.axvline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
                 self.ylines.append(line)    
                     
             self.ax.tick_params(labelsize=15)
