@@ -115,19 +115,20 @@ class MainPage(tk.Frame):
     def trim_widgets(self):
         
         #pixel values > threshold set to white (255), pixels < threshold set to black (0)
-        threshold_lab = tk.Label(self.frame_params,text='Trim Threshold',font='Arial 13').grid(row=0,column=0)
+        threshold_lab = tk.Label(self.frame_params,text='Trim Threshold',font='Arial 14')
+        threshold_lab.grid(row=0,column=0,sticky='nsew',columnspan=2)
         
         self.threshold_val = tk.Entry(self.frame_params,width=5,borderwidth=2,
                                       bg='black',fg='lime green',font='Arial 15')
         self.threshold_val.insert(0,'1')
-        self.threshold_val.grid(row=0,column=1)
+        self.threshold_val.grid(row=0,column=2,sticky='nsew',columnspan=1)
         
         self.trim_button = tk.Button(self.frame_params,text='Trim Preview',padx=2,pady=5,
                                      font='Arial 18', command=self.im_trim_preview)
-        self.trim_button.grid(row=1,column=0,columnspan=2,sticky='ew')
+        self.trim_button.grid(row=1,column=0,columnspan=4,sticky='ew')
         
-        self.divider = tk.Label(self.frame_params,text='========================================', 
-                                font='Arial 11').grid(row=2,column=0,columnspan=2,sticky='ew')
+        self.divider = tk.Label(self.frame_params,text='=============================================', 
+                                font='Arial 11').grid(row=2,column=0,columnspan=4,sticky='ew')
     
     #add pixelation/resizing features
     def resize_widgets(self):
@@ -135,21 +136,21 @@ class MainPage(tk.Frame):
         self.trimvar = tk.BooleanVar()   #initiate variable
         
         npx_lab = tk.Label(self.frame_params,text='N Pixels',
-                           font='Arial 17').grid(row=3,column=0)
+                           font='Arial 19').grid(row=3,column=0)
         npx_lab = tk.Label(self.frame_params,text='(for x if x > y, y if y < x)',
                            font='Arial 12').grid(row=4,column=0)
         
         self.npx = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',font='Arial 15')
         self.npx.insert(0,'50')
-        self.npx.grid(row=3,column=1,rowspan=2)
+        self.npx.grid(row=3,column=2,rowspan=2,sticky='w')
         
         ncolor_lab = tk.Label(self.frame_params,text='N Colors',
-                              font='Arial 17').grid(row=5,column=0)
+                              font='Arial 19').grid(row=5,column=0)
         ncolor_lab = tk.Label(self.frame_params,text='(Leave Blank for Default)',
                               font='Arial 12').grid(row=6,column=0)
         
         self.ncolor = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',font='Arial 15')
-        self.ncolor.grid(row=5,column=1,rowspan=2)
+        self.ncolor.grid(row=5,column=2,rowspan=2,sticky='w')
    
         self.notrim_button = tk.Radiobutton(self.frame_params,text='No Image Trim',variable=self.trimvar,value=False)
         self.notrim_button.grid(row=7,column=0)
@@ -157,13 +158,72 @@ class MainPage(tk.Frame):
         self.trim_button = tk.Radiobutton(self.frame_params,text='Image Trim',variable=self.trimvar,value=True)
         self.trim_button.grid(row=8,column=0)
         
-        self.pix_button_trim = tk.Button(self.frame_params,text="Pixelate", padx=5, pady=5, 
+        self.pix_button_trim = tk.Button(self.frame_params,text="Pixelate", padx=4, pady=4, 
                                         font='Arial 20', command=self.resize_im)
-        self.pix_button_trim.grid(row=7,column=1,rowspan=2,columnspan=2)
+        self.pix_button_trim.grid(row=7,column=1,rowspan=2,columnspan=3,sticky='nsew')
         
-        self.divider = tk.Label(self.frame_params,text='========================================', 
-                                font='Arial 11').grid(row=9,column=0,columnspan=2,sticky='ew')
+        self.divider = tk.Label(self.frame_params,text='=============================================', 
+                                font='Arial 11').grid(row=9,column=0,columnspan=4,sticky='ew')
     
+    def increment_px(self):
+        npx_val = int(self.npx.get())
+        npx_val += 1
+        self.npx.delete(0,tk.END)
+        self.npx.insert(0,str(npx_val))
+        
+        #automatically pixelate the image with this and other set parameters
+        self.resize_im()
+
+    def decrement_px(self):
+        npx_val = int(self.npx.get())
+        npx_val -= 1
+        self.npx.delete(0,tk.END)
+        self.npx.insert(0,str(npx_val))
+        
+        self.resize_im()
+    
+    def increment_col(self):
+        try:
+            ncol_val = int(self.ncolor.get())
+        except:
+            #if the user's input in this textbox is NONETYPE, then find the number of unique colors in
+            #the image array and increment/decrement from there...
+            #the following two lines are taken from self.im_trim()
+            im_px = self.img_array.reshape(-1, self.img_array.shape[2])
+            ncol_val = len(np.unique(im_px, axis=0, return_counts=False))
+        ncol_val += 1
+        self.ncolor.delete(0,tk.END)
+        self.ncolor.insert(0,str(ncol_val))
+        
+        self.resize_im()
+    
+    def decrement_col(self):
+        ncol_val = int(self.ncolor.get())
+        ncol_val -= 1
+        self.ncolor.delete(0,tk.END)
+        self.ncolor.insert(0,str(ncol_val))
+        
+        self.resize_im()
+        
+    #please applaud my clever function name. three claps will do.
+    def add_crement_buttons(self):
+                
+        self.incarrow_px = tk.Button(self.frame_params,text='+',padx=0.5,pady=0.5,font='Arial 16',
+                                     command=self.increment_px)
+        self.incarrow_px.grid(row=3,column=3,rowspan=2,sticky='w')
+        
+        self.decarrow_px = tk.Button(self.frame_params,text='-',padx=0.5,pady=0.5,font='Arial 16',
+                                     command=self.decrement_px)
+        self.decarrow_px.grid(row=3,column=1,rowspan=2,sticky='e')
+        
+        self.incarrow_col = tk.Button(self.frame_params,text='+',padx=0.5,pady=0.5,font='Arial 16',
+                                      command=self.increment_col)
+        self.incarrow_col.grid(row=5,column=3,rowspan=2,sticky='w')
+                
+        self.decarrow_col = tk.Button(self.frame_params,text='-',padx=0.5,pady=0.5,font='Arial 16',
+                                      command=self.decrement_col)
+        self.decarrow_col.grid(row=5,column=1,rowspan=2,sticky='e')
+
     #add grid checkbox to frame_params
     def grid_checkbox(self):
         
@@ -171,38 +231,42 @@ class MainPage(tk.Frame):
         self.gridcheck = tk.Checkbutton(self.frame_params,text='Add Gridlines',
                                         onvalue=1,offvalue=0,command=self.add_grid,
                                         variable=self.var,font='Arial 18')
-        self.gridcheck.grid(row=18,column=0,sticky='ew',columnspan=2)
+        self.gridcheck.grid(row=18,column=0,sticky='ew',columnspan=4)
     
     #add grid textbox to frame_params --> specify color of grid lines AND line spacing
     def grid_textbox(self):
         
-        linespacing_lab = tk.Label(self.frame_params,text='Line Spacing',font='Arial 13').grid(row=14,column=0)
-        linethickness_lab = tk.Label(self.frame_params,text='Line Thickness',font='Arial 13').grid(row=15,column=0)
-        color_grid_lab = tk.Label(self.frame_params,text='Grid Color',font='Arial 13').grid(row=16,column=0)
-        offset_val_lab = tk.Label(self.frame_params,text='Offset Value',font='Arial 13').grid(row=17,column=0)
+        linespacing_lab = tk.Label(self.frame_params,text='Line Spacing',font='Arial 14')
+        linespacing_lab.grid(row=14,column=0,sticky='nsew',columnspan=2)
+        linethickness_lab = tk.Label(self.frame_params,text='Line Thickness',font='Arial 14')
+        linethickness_lab.grid(row=15,column=0,sticky='nsew',columnspan=2)
+        color_grid_lab = tk.Label(self.frame_params,text='Grid Color',font='Arial 14')
+        color_grid_lab.grid(row=16,column=0,sticky='nsew',columnspan=2)
+        offset_val_lab = tk.Label(self.frame_params,text='Offset Value',font='Arial 14')
+        offset_val_lab.grid(row=17,column=0,sticky='nsew',columnspan=2)
 
         self.line_spacing = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                       font='Arial 15')
         self.line_spacing.insert(0,'1')
-        self.line_spacing.grid(row=14,column=1)
+        self.line_spacing.grid(row=14,column=2,sticky='nsew')
         
         self.line_thickness = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                        font='Arial 15')
         self.line_thickness.insert(0,'1')
-        self.line_thickness.grid(row=15,column=1)
+        self.line_thickness.grid(row=15,column=2,sticky='nsew')
         
         self.color_grid = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                       font='Arial 15')
         self.color_grid.insert(0,'black')
-        self.color_grid.grid(row=16,column=1)
+        self.color_grid.grid(row=16,column=2,sticky='nsew')
         
         self.offset_val = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',
                                    font='Arial 15')
         self.offset_val.insert(0,str(self.init_offset))
-        self.offset_val.grid(row=17,column=1)
+        self.offset_val.grid(row=17,column=2,sticky='nsew')
         
-        self.divider = tk.Label(self.frame_params,text='========================================', 
-                                font='Arial 11').grid(row=19,column=0,columnspan=2,sticky='ew')
+        self.divider = tk.Label(self.frame_params,text='=============================================', 
+                                font='Arial 11').grid(row=19,column=0,columnspan=4,sticky='ew')
         
     
     #add x-flip checkbox to frame_params
@@ -213,17 +277,17 @@ class MainPage(tk.Frame):
         self.flipcheck = tk.Checkbutton(self.frame_params,text='Flip X-Axis',
                                         onvalue=True,offvalue=False,command=self.flip_xaxis,
                                         variable=self.flipvar,font='Arial 18')
-        self.flipcheck.grid(row=11,column=0,sticky='ew',columnspan=2)
+        self.flipcheck.grid(row=11,column=0,sticky='ew',columnspan=4)
     
     def grayscale_box(self):
         self.grayvar = tk.BooleanVar()
         self.graycheck = tk.Checkbutton(self.frame_params,text='Convert to Grayscale',
                                         onvalue=True,offvalue=False,command=self.convert_grayscale,
                                         variable=self.grayvar,font='Arial 18')
-        self.graycheck.grid(row=12,column=0,sticky='ew',columnspan=2)
+        self.graycheck.grid(row=12,column=0,sticky='ew',columnspan=4)
         
-        self.divider = tk.Label(self.frame_params,text='========================================', 
-                                font='Arial 11').grid(row=13,column=0,columnspan=2,sticky='ew')
+        self.divider = tk.Label(self.frame_params,text='=============================================', 
+                                font='Arial 11').grid(row=13,column=0,columnspan=4,sticky='ew')
     
     def save_image(self):
         
@@ -241,18 +305,18 @@ class MainPage(tk.Frame):
         
         self.save_button = tk.Button(self.frame_params, text='Save Result', padx=5, pady=5, font='Ariel 20',
                                      command=self.save_image)
-        self.save_button.grid(row=20,column=0,columnspan=2,sticky='ew')
+        self.save_button.grid(row=20,column=0,columnspan=4,sticky='ew')
 
 
     def populate_params(self):
         self.trim_widgets()
         self.resize_widgets()
+        self.add_crement_buttons()
         self.grid_checkbox()    
         self.grid_textbox()
         self.flip_checkbox()
         self.grayscale_box()
         self.add_save_button()
-        
     
     #add browsing textbox to frame_buttons
     def im_to_display(self):
@@ -585,5 +649,3 @@ if __name__ == "__main__":
         app = App(path_to_repos, initial_browsedir, save_path, window_geometry, init_offset)
         app.mainloop()
         
-#feature idea list:
-#widget with +1, -1 increments for desired px cells on x or y axis
