@@ -368,7 +368,7 @@ class MainPage(tk.Frame):
     def img_firstpass(self):
         full_filepath = str(self.path_to_im.get())
 
-        self.img_only = Image.open(full_filepath)
+        self.img_only = Image.open(full_filepath).convert('RGB')
         self.img_array = np.asarray(self.img_only)
 
         #add title...because why not?
@@ -502,9 +502,10 @@ class MainPage(tk.Frame):
                 self.img_only = self.img_only.point(lambda x: 255 if x>otsu_threshold else 0,mode='1')
             else:
                 #otherwise, proceed as normal. :-)
-                self.img_only = self.img_only.quantize(colors=int(self.ncolor.get()))
+                ncol = int(self.ncolor.get())
+                self.img_only = self.img_only.quantize(colors=ncol,method=1,kmeans=ncol)
                 self.img_only = self.img_only.convert('RGB')
-
+                
         except:
             self.img_only = self.img_only
         
