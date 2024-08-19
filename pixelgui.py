@@ -293,13 +293,9 @@ class MainPage(tk.Frame):
         
         while os.path.exists('{}{:d}-pxd.png'.format(self.save_path+self.filename, self.savefig_counter)):
             self.savefig_counter += 1
-            filename = '{}{:d}-pxd.png'.format(self.save_path+self.filename,self.savefig_counter)
-            self.fig.savefig(filename,dpi=100,bbox_inches='tight', pad_inches=0.2)
-            print(f'Figure saved to: {filename}')
-        else:
-            filename = '{}{:d}-pxd.png'.format(self.save_path+self.filename,self.savefig_counter)
-            self.fig.savefig(filename,dpi=100,bbox_inches='tight', pad_inches=0.2)
-            print(f'Figure saved to: {filename}')
+        filename = '{}{:d}-pxd.png'.format(self.save_path+self.filename,self.savefig_counter)
+        self.fig.savefig(filename,dpi=100,bbox_inches='tight', pad_inches=0.2)
+        print(f'Figure saved to: {filename}')        
             
     def add_save_button(self):
         

@@ -2,7 +2,7 @@
 
 path_to_repos      /Users/k215c316/github/pixelgui/       # loc of GUI script (and miscellany) pulled from github
 initial_browsedir  /Users/k215c316/Desktop/  # where to direct GUI to begin browsing for .FITS files
-save_path          /Users/k215c316/Desktop/               #where to save pixelated result(s)
+save_path          /Users/k215c316/Desktop/next_px_projects/               #where to save pixelated result(s)
 #---------------------------------- Parameters ----------------------------------
 
 init_offset             0.5                       # initial offset for grid lines to ensure correct alignment
