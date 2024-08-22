@@ -460,8 +460,8 @@ class MainPage(tk.Frame):
         if bbox:
             self.img_only = self.img_only.crop(bbox)
             self.img_array = np.asarray(self.img_only)
-        else:
-            print("No content found to trim - retaining original image dimension.")
+        #else:
+        #    print("No content found to trim - retaining original image dimension.")
                 
     def im_trim_preview(self):
         
