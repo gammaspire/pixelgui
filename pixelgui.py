@@ -30,8 +30,7 @@ homedir = os.getenv('HOME')
 #create main window container, into which the first page will be placed.
 class App(tk.Tk):
     
-    def __init__(self, path_to_repos, initial_browsedir, save_path, window_geometry, init_offset,
-                transparent_filler='white'):  #INITIALIZE; will always run when App class is called.
+    def __init__(self, path_to_repos, initial_browsedir, save_path, window_geometry, init_offset):  #INITIALIZE; will always run when App class is called.
         tk.Tk.__init__(self)     #initialize tkinter; *args are parameter arguments, **kwargs can be dictionary arguments
         
         self.title('Project Pixel: Generate Pixelated Images for Art')
@@ -47,8 +46,7 @@ class App(tk.Tk):
 
         ## Initialize Frames
         self.frames = {}     #empty dictionary
-        frame = MainPage(container, self, path_to_repos, initial_browsedir, save_path, init_offset,
-                        transparent_filler)   #define frame  
+        frame = MainPage(container, self, path_to_repos, initial_browsedir, save_path, init_offset)   #define frame  
         self.frames[MainPage] = frame     #assign new dictionary entry {MainPage: frame}
         frame.grid(row=0,column=0,sticky='nsew')   #define where to place frame within the container...CENTER!
         for i in range(self.rowspan):
@@ -64,8 +62,7 @@ class App(tk.Tk):
 #inherits all from tk.Frame; will be on first window
 class MainPage(tk.Frame):    
     
-    def __init__(self, parent, controller, path_to_repos, initial_browsedir, save_path, init_offset,
-                transparent_filler):
+    def __init__(self, parent, controller, path_to_repos, initial_browsedir, save_path, init_offset):
         
         #defines the number of rows/columns to resize when resizing the entire window.
         self.rowspan=10
@@ -77,9 +74,7 @@ class MainPage(tk.Frame):
         self.path_to_repos = path_to_repos
         self.initial_browsedir = initial_browsedir
         self.save_path = save_path
-        
-        self.transparent_filler = transparent_filler
-        
+                
         self.savefig_counter = 0     #will use for filenames! 
         
         #first frame...
@@ -647,9 +642,7 @@ if __name__ == "__main__":
         save_path = param_dict['save_path']
         window_geometry = param_dict['window_geometry']
         init_offset = param_dict['init_offset']
-        transparent_filler = param_dict['transparent_filler']
         
-        app = App(path_to_repos, initial_browsedir, save_path, window_geometry, init_offset,
-                 transparent_filler)
+        app = App(path_to_repos, initial_browsedir, save_path, window_geometry, init_offset)
         app.mainloop()
         
