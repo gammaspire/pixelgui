@@ -30,7 +30,8 @@ homedir = os.getenv('HOME')
 #create main window container, into which the first page will be placed.
 class App(tk.Tk):
     
-    def __init__(self, path_to_repos, initial_browsedir, save_path, window_geometry, init_offset):  #INITIALIZE; will always run when App class is called.
+    def __init__(self, path_to_repos, initial_browsedir, save_path, window_geometry, init_offset,
+                transparent_filler='white'):  #INITIALIZE; will always run when App class is called.
         tk.Tk.__init__(self)     #initialize tkinter; *args are parameter arguments, **kwargs can be dictionary arguments
         
         self.title('Project Pixel: Generate Pixelated Images for Art')
@@ -46,7 +47,8 @@ class App(tk.Tk):
 
         ## Initialize Frames
         self.frames = {}     #empty dictionary
-        frame = MainPage(container, self, path_to_repos, initial_browsedir, save_path, init_offset)   #define frame  
+        frame = MainPage(container, self, path_to_repos, initial_browsedir, save_path, init_offset,
+                        transparent_filler)   #define frame  
         self.frames[MainPage] = frame     #assign new dictionary entry {MainPage: frame}
         frame.grid(row=0,column=0,sticky='nsew')   #define where to place frame within the container...CENTER!
         for i in range(self.rowspan):
@@ -62,7 +64,8 @@ class App(tk.Tk):
 #inherits all from tk.Frame; will be on first window
 class MainPage(tk.Frame):    
     
-    def __init__(self, parent, controller, path_to_repos, initial_browsedir, save_path, init_offset):
+    def __init__(self, parent, controller, path_to_repos, initial_browsedir, save_path, init_offset,
+                transparent_filler):
         
         #defines the number of rows/columns to resize when resizing the entire window.
         self.rowspan=10
@@ -74,6 +77,8 @@ class MainPage(tk.Frame):
         self.path_to_repos = path_to_repos
         self.initial_browsedir = initial_browsedir
         self.save_path = save_path
+        
+        self.transparent_filler = transparent_filler
         
         self.savefig_counter = 0     #will use for filenames! 
         
@@ -350,7 +355,7 @@ class MainPage(tk.Frame):
         #self.fig.subplots_adjust(left=0.06, right=0.94, top=0.94, bottom=0.06)
 
         self.ax = self.fig.add_subplot()
-        self.im = self.ax.imshow(np.zeros(100).reshape(10,10),origin='lower')
+        self.im = self.ax.imshow(np.zeros(100).reshape(10,10),origin='lower',alpha=0)
         self.ax.set_title('Click "Browse" to the right to begin!',fontsize=15)
         self.text = self.ax.text(x=2.8,y=5.0,s='Your Image',color='red',fontsize=28)
         self.text = self.ax.text(x=2.9,y=4.1,s='Goes Here',color='red',fontsize=28)
@@ -364,7 +369,7 @@ class MainPage(tk.Frame):
     def img_firstpass(self):
         full_filepath = str(self.path_to_im.get())
 
-        self.img_only = Image.open(full_filepath).convert('RGB')
+        self.img_only = Image.open(full_filepath).convert('RGBA')
         self.img_array = np.asarray(self.img_only)
 
         #add title...because why not?
@@ -391,7 +396,7 @@ class MainPage(tk.Frame):
         
         self.ax = self.fig.add_subplot()
         self.im = self.ax.imshow(np.flipud(self.img_array),origin='lower',cmap='gray')
-
+        
         self.ax.set_title(f'{self.filename}',fontsize=15)
         
         self.create_axislabels()
@@ -500,7 +505,7 @@ class MainPage(tk.Frame):
                 #otherwise, proceed as normal. :-)
                 ncol = int(self.ncolor.get())
                 self.img_only = self.img_only.quantize(colors=ncol,method=1,kmeans=ncol)
-                self.img_only = self.img_only.convert('RGB')
+                self.img_only = self.img_only.convert('RGBA')
                 
         except:
             self.img_only = self.img_only
@@ -642,7 +647,9 @@ if __name__ == "__main__":
         save_path = param_dict['save_path']
         window_geometry = param_dict['window_geometry']
         init_offset = param_dict['init_offset']
+        transparent_filler = param_dict['transparent_filler']
         
-        app = App(path_to_repos, initial_browsedir, save_path, window_geometry, init_offset)
+        app = App(path_to_repos, initial_browsedir, save_path, window_geometry, init_offset,
+                 transparent_filler)
         app.mainloop()
         
