@@ -190,7 +190,7 @@ class MainPage(tk.Frame):
             #the image array and increment/decrement from there...
             #the following two lines are taken from self.im_trim()
             im_px = self.img_array.reshape(-1, self.img_array.shape[2])
-            ncol_val = len(np.unique(im_px, axis=0, return_counts=False))
+            ncol_val = len(np.unique(im_px, axis=0, return_counts=False))-1
         ncol_val += 1
         self.ncolor.delete(0,tk.END)
         self.ncolor.insert(0,str(ncol_val))
@@ -499,9 +499,8 @@ class MainPage(tk.Frame):
             else:
                 #otherwise, proceed as normal. :-)
                 ncol = int(self.ncolor.get())
-                self.img_only = self.img_only.quantize(colors=ncol,method=1,kmeans=ncol)
-                self.img_only = self.img_only.convert('RGBA')
-                
+                self.img_only = self.img_only.quantize(colors=ncol,method=2,kmeans=ncol)
+                self.img_only = self.img_only.convert('RGBA')  #for the case where L is the image type
         except:
             self.img_only = self.img_only
         
