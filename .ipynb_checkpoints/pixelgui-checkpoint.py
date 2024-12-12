@@ -21,7 +21,7 @@ from tkinter import filedialog
 import glob
 
 import matplotlib.ticker as ticker
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageEnhance
 
 from skimage.filters import threshold_otsu
 
@@ -30,8 +30,11 @@ homedir = os.getenv('HOME')
 #create main window container, into which the first page will be placed.
 class App(tk.Tk):
     
-    def __init__(self, path_to_repos, initial_browsedir, save_path, window_geometry, init_offset):  #INITIALIZE; will always run when App class is called.
-        tk.Tk.__init__(self)     #initialize tkinter; *args are parameter arguments, **kwargs can be dictionary arguments
+    #ITITIALIZE; will always run when App class is called.
+    def __init__(self, path_to_repos, initial_browsedir, save_path, window_geometry, init_offset,
+                popup_geometry): 
+
+        super().__init__()   #initialize tkinter window
         
         self.title('Project Pixel: Generate Pixelated Images for Art')
         self.geometry(window_geometry)
@@ -46,7 +49,7 @@ class App(tk.Tk):
 
         ## Initialize Frames
         self.frames = {}     #empty dictionary
-        frame = MainPage(container, self, path_to_repos, initial_browsedir, save_path, init_offset)   #define frame  
+        frame = MainPage(container, self, path_to_repos, initial_browsedir, save_path, init_offset, popup_geometry)   #define frame  
         self.frames[MainPage] = frame     #assign new dictionary entry {MainPage: frame}
         frame.grid(row=0,column=0,sticky='nsew')   #define where to place frame within the container...CENTER!
         for i in range(self.rowspan):
@@ -62,13 +65,20 @@ class App(tk.Tk):
 #inherits all from tk.Frame; will be on first window
 class MainPage(tk.Frame):    
     
-    def __init__(self, parent, controller, path_to_repos, initial_browsedir, save_path, init_offset):
+    def __init__(self, parent, controller, path_to_repos, initial_browsedir, save_path, init_offset,
+                 popup_geometry):
+        
+        #initiate variables...
+        self.auto=False
+        self.manual=False
         
         #defines the number of rows/columns to resize when resizing the entire window.
         self.rowspan=10
         
         self.init_offset = float(init_offset)
         self.color = 'black'    #for gridlines
+        
+        self.popup_geometry=popup_geometry
         
         #generalized parameters given in params.txt file
         self.path_to_repos = path_to_repos
@@ -77,8 +87,8 @@ class MainPage(tk.Frame):
                 
         self.savefig_counter = 0     #will use for filenames! 
         
-        #first frame...
-        tk.Frame.__init__(self,parent)
+        #first frame...initialize inside of the parent (App window)
+        super().__init__(parent)
         
         #create display frame!
         self.frame_display = tk.LabelFrame(self,text='Image',font='Vendana 15',padx=5,pady=5)
@@ -110,22 +120,18 @@ class MainPage(tk.Frame):
         self.init_display_size()   #creates canvas frame
         self.populate_params()     #creates parameter frame
     
+    #create separate popup window for image display features (for either pre- or post- pixelation)
+    def popup_params(self):
+        self.popup_frame = ParamWindow(self,self.popup_geometry)
+        
+        
+    
     #add trimming features!
+    def add_param_button(self):
 
-    def trim_widgets(self):
-        
-        #pixel values > threshold set to white (255), pixels < threshold set to black (0)
-        threshold_lab = tk.Label(self.frame_params,text='Trim Threshold',font='Arial 14')
-        threshold_lab.grid(row=0,column=0,sticky='nsew',columnspan=2)
-        
-        self.threshold_val = tk.Entry(self.frame_params,width=5,borderwidth=2,
-                                      bg='black',fg='lime green',font='Arial 15')
-        self.threshold_val.insert(0,'1')
-        self.threshold_val.grid(row=0,column=2,sticky='nsew',columnspan=1)
-        
-        self.trim_button = tk.Button(self.frame_params,text='Trim Preview',padx=2,pady=5,
-                                     font='Arial 18', command=self.im_trim_preview)
-        self.trim_button.grid(row=1,column=0,columnspan=4,sticky='ew')
+        self.param_button = tk.Button(self.frame_params,text='Edit Display Image',padx=2,pady=5,
+                                     font='Arial 18', command=self.popup_params)
+        self.param_button.grid(row=1,column=0,columnspan=4,sticky='ew')
         
         self.divider = tk.Label(self.frame_params,text='=============================================', 
                                 font='Arial 11').grid(row=2,column=0,columnspan=4,sticky='ew')
@@ -133,7 +139,7 @@ class MainPage(tk.Frame):
     #add pixelation/resizing features
     def resize_widgets(self):
         
-        self.trimvar = tk.BooleanVar()   #initiate variable
+        #self.trimvar = tk.BooleanVar()   #initiate variable
         
         npx_lab = tk.Label(self.frame_params,text='N Pixels',
                            font='Arial 19').grid(row=3,column=0)
@@ -151,12 +157,6 @@ class MainPage(tk.Frame):
         
         self.ncolor = tk.Entry(self.frame_params,width=5,borderwidth=2,bg='black',fg='lime green',font='Arial 15')
         self.ncolor.grid(row=5,column=2,rowspan=2,sticky='w')
-   
-        self.notrim_button = tk.Radiobutton(self.frame_params,text='No Image Trim',variable=self.trimvar,value=False)
-        self.notrim_button.grid(row=7,column=0)
-        
-        self.trim_button = tk.Radiobutton(self.frame_params,text='Image Trim',variable=self.trimvar,value=True)
-        self.trim_button.grid(row=8,column=0)
         
         self.pix_button_trim = tk.Button(self.frame_params,text="Pixelate", padx=4, pady=4, 
                                         font='Arial 20', command=self.resize_im)
@@ -305,7 +305,7 @@ class MainPage(tk.Frame):
 
 
     def populate_params(self):
-        self.trim_widgets()
+        self.add_param_button()
         self.resize_widgets()
         self.add_crement_buttons()
         self.grid_checkbox()    
@@ -404,12 +404,25 @@ class MainPage(tk.Frame):
     
     #use ONLY for the enter/refresh button. first file pass!
     def initiate_canvas(self):
+
+        #clear ncolor textbox
+        self.ncolor.delete(0,tk.END)
+        
+        #refresh xpixels textbox
+        self.npx.delete(0,tk.END)
+        self.npx.insert(0,'50')
+        
+        #draw fresh image
         self.img_firstpass()
         self.draw_im_canvas()
+        
+        #update popup text with new image shape
+        self.refresh_ranges()
     
     #this function helps ensure that pixel cells are square- and not rectangular-shaped
     def get_scaling_fraction(self):
         
+        #fun fact -- these are not necessarily the height and width of the image!
         self.height = np.shape(self.img_array)[0]
         self.width = np.shape(self.img_array)[1]
         
@@ -424,57 +437,127 @@ class MainPage(tk.Frame):
         else:
             print("I don't know what to tell ye. Your width and/or height are not numbers.")
             return None
-
-    def im_trim(self):        #...thank you, chatgpt.
-        
+    
+    def refresh_ranges(self,resized=False):
         try:
-            #reshape image array to (number of pixels, number of channels)
-            pixels = self.img_array.reshape(-1, self.img_array.shape[2])
-            
-            #find most common color -- ASSUMED to be background color!
-            unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
-            background_color = unique_colors[counts.argmax()]
-            
-            #create new image with background color (I *think* it only contains that background color)
-            bg = Image.new(self.img_only.mode, self.img_only.size, tuple(background_color))
-        
-        #if any steps beget errors, then claim the background color is the color of the upper left px
+            width,height = self.img_only.size
+            if not resized:
+                self.popup_frame.xrange_vals.delete(0,tk.END)
+                self.popup_frame.xrange_vals.insert(0,f'({0},{width})')
+                self.popup_frame.yrange_vals.delete(0,tk.END)
+                self.popup_frame.yrange_vals.insert(0,f'({0},{height})')
+            if resized:
+                self.popup_frame.xresized_lab.config(text=f'Pixelated X-Range: (0, {width})')
+                self.popup_frame.yresized_lab.config(text=f'Pixelated Y-Range: (0, {height})')
         except:
-            bg = Image.new(self.img_only.mode, self.img_only.size, self.img_only.getpixel((0,0)))
-            
-        #subtract background from image
-        diff = ImageChops.difference(self.img_only, bg)
+            return
+    
+    def integerize_ranges(self):
         
-        #convert difference to grayscale...I guess.
-        diff = diff.convert('L')
+        width,height = self.img_only.size
         
-        #threshold difference image to create a binary image
-        #pixel values > threshold set to white (255), pixels < threshold set to black (0)
-        threshold = float(self.threshold_val.get())
+        xvals = self.popup_frame.xrange_vals.get()
+        yvals = self.popup_frame.yrange_vals.get()
+
+        #find where comma separates the min and max values
+        space_indx = xvals.index(',')
+        space_indy = yvals.index(',')
+
+        #isolate the minimum value (1 bypasses the '(')
+        xmin = int(xvals[1:space_indx])
+        ymin = int(yvals[1:space_indy])
+
+        #isolate the maximum value (ind+1 to skip the ',', len(string)-1 bypasses the ')')
+        xmax = int(xvals[space_indx+1:len(xvals)-1])
+        ymax = int(yvals[space_indy+1:len(yvals)-1])
+
+        #adjust so that origin is bottom left, not top left
+        ymax_adj = height - ymin
+        ymin_adj = height - ymax
         
-        diff = diff.point(lambda p: p > threshold and 255)
+        return xmin, ymin_adj, xmax, ymax_adj
         
-        #get bounding box of non-background region
-        bbox = diff.getbbox()
-        
-        if bbox:
-            self.img_only = self.img_only.crop(bbox)
-            self.img_array = np.asarray(self.img_only)
-        #else:
-        #    print("No content found to trim - retaining original image dimension.")
+    
+    def im_trim(self,mode):
                 
-    def im_trim_preview(self):
+        if mode=='auto':
+            self.auto=True
+            self.manual=False
+            try:
+                #reshape image array to (number of pixels, number of channels)
+                pixels = self.img_array.reshape(-1, self.img_array.shape[2])
+
+                #find most common color -- ASSUMED to be background color!
+                unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
+                background_color = unique_colors[counts.argmax()]
+
+                #create new image with background color (I *think* it only contains that background color)
+                bg = Image.new(self.img_only.mode, self.img_only.size, tuple(background_color))
+
+            #if any steps beget errors, then claim the background color is the color of the upper left px
+            except:
+                bg = Image.new(self.img_only.mode, self.img_only.size, self.img_only.getpixel((0,0)))
+
+            #subtract background from image
+            diff = ImageChops.difference(self.img_only, bg)
+
+            #convert difference to grayscale...I guess.
+            diff = diff.convert('L')
+
+            #threshold difference image to create a binary image
+            #pixel values > threshold set to white (255), pixels < threshold set to black (0)
+            threshold = float(self.popup_frame.threshold_val.get())
+
+            diff = diff.point(lambda p: p > threshold and 255)
+
+            #get bounding box of non-background region
+            bbox = diff.getbbox()
+
+            if bbox:
+                self.img_only = self.img_only.crop(bbox)
+                self.img_array = np.asarray(self.img_only)
+                        
+        if mode=='manual':
+            self.manual=True
+            self.auto=False
+            
+            try:
+                xmin, ymin_adj, xmax, ymax_adj = self.integerize_ranges()
+            
+            except:
+                print('Error reading coordinate ranges. Defaulting to original image dimensions.')
+                xmin,xmax = 0, self.img_array.shape[0]
+                ymin_adj,ymax_adj = 0, self.img_array.shape[1]
+            
+            #(left, top, right, bottom)...origin is TOP LEFT OF IMAGE, so use transformed y-coordinates.
+            self.img_only = self.img_only.crop((xmin, ymin_adj, xmax, ymax_adj))
+            self.img_array = np.asarray(self.img_only)
         
-        self.im_trim()
+        #update popup text with new image shape
+        self.refresh_ranges()
+        
+                
+    def im_trim_auto(self):
+        
+        self.im_trim(mode='auto')
+        self.draw_im_canvas()
+        
+    def im_trim_manual(self):
+        
+        self.im_trim(mode='manual')
         self.draw_im_canvas()
     
     #resizing the image and recreating the canvas.
     def resize_im(self):
+        
         self.img_firstpass()
         
-        if self.trimvar.get():
-            self.im_trim()
-
+        if self.auto:
+            self.im_trim(mode='auto')
+            
+        if self.manual:
+            self.im_trim(mode='manual')
+        
         self.frac_h, self.frac_w = self.get_scaling_fraction() 
         self.npixels = int(self.npx.get())
         
@@ -482,9 +565,7 @@ class MainPage(tk.Frame):
         #resample options: NEAREST, BILINEAR, BICUBIX, LANCZOS, BOX, HAMMING
         self.img_only = self.img_only.resize((int(self.npixels*self.frac_w), 
                                                 int(self.npixels*self.frac_h)),
-                                               resample=Image.NEAREST)
-        
-        
+                                               resample=Image.NEAREST)        
         try:
             #I assume users who select ncolor=2 are wanting a black/white BINARY image! 
             if int(self.ncolor.get())==2:
@@ -506,7 +587,10 @@ class MainPage(tk.Frame):
         
         self.img_array = np.asarray(self.img_only)
         self.draw_im_canvas()
-    
+        
+        #update RESIZED ranges in the popup tab, if applicable (i.e., if open)
+        self.refresh_ranges(resized=True)
+
     def flip_xaxis(self):
         
         self.create_axislabels()
@@ -613,6 +697,73 @@ class MainPage(tk.Frame):
                 n.remove()
                 #self.ax.yaxis.set_major_locator(ticker.AutoLocator())
             self.canvas.draw()
+
+            
+class ParamWindow(tk.Toplevel):
+    
+    def __init__(self, parent, popup_geometry):
+        
+        super().__init__(parent) 
+        
+        #defines the number of rows/columns to resize when resizing the entire window.
+        self.rowspan=10
+        
+        self.title("Canvas Display Paraneters")
+        self.geometry(popup_geometry)
+        
+        
+        #add buttons, command will be parent.FUNCTION
+        
+        #pixel values > threshold set to white (255), pixels < threshold set to black (0)
+        threshold_lab = tk.Label(self,text='Trim Threshold',font='Arial 14')
+        threshold_lab.grid(row=0,column=0,sticky='w',columnspan=1,rowspan=2)
+        
+        self.threshold_val = tk.Entry(self,width=5,borderwidth=2,
+                                      bg='black',fg='lime green',font='Arial 15')
+        self.threshold_val.insert(0,'1')
+        self.threshold_val.grid(row=0,column=1,sticky='w',columnspan=1,rowspan=2)
+        
+        self.trim_button = tk.Button(self,text='Auto-Trim Image',padx=2,pady=5,
+                                     font='Arial 18', command=parent.im_trim_auto)
+        self.trim_button.grid(row=2,column=0,columnspan=2,rowspan=1,sticky='w')
+  
+        #labels that display resized coordinate ranges
+        self.xresized_lab = tk.Label(self,text='Pixelated X-Range ( , )',font='Arial 14')
+        self.yresized_lab = tk.Label(self,text='Pixelated Y-Range ( , )',font='Arial 14')
+        self.xresized_lab.grid(row=0,column=4,sticky='e')
+        self.yresized_lab.grid(row=1,column=4,sticky='e')
+
+        #manually trim the image 
+        try:
+            width,height = parent.img_only.size
+        #lawd, the user prematurely opened the popup frame! punish them with incorrect values!
+        except:
+            width,height = -999,-999
+            
+        xrange_lab = tk.Label(self,text='(Xmin,Xmax)',font='Arial 14')
+        xrange_lab.grid(row=0,column=2,sticky='e',columnspan=1)
+        self.xrange_vals = tk.Entry(self,width=8,borderwidth=2,
+                                    bg='black',fg='lime green',font='Arial 15')
+        self.xrange_vals.insert(0,f'({0},{width})')
+        self.xrange_vals.grid(row=0,column=3,sticky='e',columnspan=1)
+        
+        
+        yrange_lab = tk.Label(self,text='(Ymin,Ymax)',font='Arial 14')
+        yrange_lab.grid(row=1,column=2,sticky='e',columnspan=1)
+        self.yrange_vals = tk.Entry(self,width=8,borderwidth=2,
+                                    bg='black',fg='lime green',font='Arial 15')
+        self.yrange_vals.insert(0,f'({0},{height})')
+        self.yrange_vals.grid(row=1,column=3,sticky='e',columnspan=1)
+                
+        self.rangebutton = tk.Button(self,text='Manual-Trim Image',padx=2,pady=5,
+                                     font='Arial 18',command=parent.im_trim_manual)
+        self.rangebutton.grid(row=2,column=2,columnspan=2,sticky='e')
+
+
+        
+        
+            
+            
             
 if __name__ == "__main__":
     
@@ -641,7 +792,8 @@ if __name__ == "__main__":
         save_path = param_dict['save_path']
         window_geometry = param_dict['window_geometry']
         init_offset = param_dict['init_offset']
+        popup_geometry = param_dict['popup_geometry']
         
-        app = App(path_to_repos, initial_browsedir, save_path, window_geometry, init_offset)
+        app = App(path_to_repos, initial_browsedir, save_path, window_geometry, init_offset, popup_geometry)
         app.mainloop()
         
