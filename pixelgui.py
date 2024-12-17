@@ -123,9 +123,7 @@ class MainPage(tk.Frame):
     #create separate popup window for image display features (for either pre- or post- pixelation)
     def popup_params(self):
         self.popup_frame = ParamWindow(self,self.popup_geometry)
-        
-        
-    
+
     #add trimming features!
     def add_param_button(self):
 
@@ -187,7 +185,7 @@ class MainPage(tk.Frame):
             ncol_val = int(self.ncolor.get())
         except:
             #if the user's input in this textbox is NONETYPE, then find the number of unique colors in
-            #the image array and increment/decrement from there...
+            #the image array and increment from there...
             #the following two lines are taken from self.im_trim()
             im_px = self.img_array.reshape(-1, self.img_array.shape[2])
             ncol_val = len(np.unique(im_px, axis=0, return_counts=False))-1
@@ -198,7 +196,14 @@ class MainPage(tk.Frame):
         self.resize_im()
     
     def decrement_col(self):
-        ncol_val = int(self.ncolor.get())
+        try:
+            ncol_val = int(self.ncolor.get())
+        except:
+            #if the user's input in this textbox is NONETYPE, then find the number of unique colors in
+            #the image array and decrement from there...
+            #the following two lines are taken from self.im_trim()
+            im_px = self.img_array.reshape(-1, self.img_array.shape[2])
+            ncol_val = len(np.unique(im_px, axis=0, return_counts=False))-1
         ncol_val -= 1
         self.ncolor.delete(0,tk.END)
         self.ncolor.insert(0,str(ncol_val))
@@ -303,7 +308,6 @@ class MainPage(tk.Frame):
                                      command=self.save_image)
         self.save_button.grid(row=20,column=0,columnspan=4,sticky='ew')
 
-
     def populate_params(self):
         self.add_param_button()
         self.resize_widgets()
@@ -360,12 +364,16 @@ class MainPage(tk.Frame):
         self.label = self.canvas.get_tk_widget()
         self.label.grid(row=0,column=0,columnspan=4,rowspan=6,sticky='nsew')
     
-    #setting up file variables
-    def img_firstpass(self):
+    def load_image(self):
         full_filepath = str(self.path_to_im.get())
 
         self.img_only = Image.open(full_filepath).convert('RGBA')
         self.img_array = np.asarray(self.img_only)
+    
+    #setting up file variables
+    def img_firstpass(self):
+        
+        self.load_image()
 
         #add title...because why not?
         try:
@@ -374,10 +382,9 @@ class MainPage(tk.Frame):
             split_filename = full_filename.split('.')  #separate image name from file extension
             self.filename = split_filename[0]
         except:
-            print('Error. Defaulting to "Generic" for canvas title.')
             self.filename = 'Generic'
         
-    def draw_im_canvas(self):
+    def draw_im_canvas(self,img_array):
 
         #delete any and all miscellany from the canvas (including that which was created
         #using self.init_display_size())
@@ -390,7 +397,7 @@ class MainPage(tk.Frame):
         self.graycheck.deselect()
         
         self.ax = self.fig.add_subplot()
-        self.im = self.ax.imshow(np.flipud(self.img_array),origin='lower',cmap='gray')
+        self.im = self.ax.imshow(np.flipud(img_array),origin='lower',cmap='gray')
         
         self.ax.set_title(f'{self.filename}',fontsize=15)
         
@@ -412,11 +419,19 @@ class MainPage(tk.Frame):
         self.npx.delete(0,tk.END)
         self.npx.insert(0,'50')
         
+        #will only work if self.popup_frame is already defined...which requires the user to have already
+        #opened the popup window!
+        try:
+            #return to default sharpness
+            self.popup_frame.sharp_slider.set(1.0, 0.0)
+        except:
+            pass
+        
         #draw fresh image
         self.img_firstpass()
-        self.draw_im_canvas()
+        self.draw_im_canvas(self.img_array)
         
-        #update popup text with new image shape
+        #update popup text with new image shape and sharpness
         self.refresh_ranges()
     
     #this function helps ensure that pixel cells are square- and not rectangular-shaped
@@ -438,6 +453,17 @@ class MainPage(tk.Frame):
             print("I don't know what to tell ye. Your width and/or height are not numbers.")
             return None
     
+    #the *args handles whatever else the tk.Scroll function generates - some miscellany which I need not.
+    def change_sharpness(self, img, value):
+        
+        sharp_param = float(value)
+        enhancer = ImageEnhance.Sharpness(img)
+        img = enhancer.enhance(sharp_param)
+        
+        self.draw_im_canvas(np.asarray(img))
+        
+        return img
+    
     def refresh_ranges(self,resized=False):
         try:
             width,height = self.img_only.size
@@ -452,6 +478,7 @@ class MainPage(tk.Frame):
         except:
             return
     
+    #change range inputs in the tkinter textboxes from strings to integers
     def integerize_ranges(self):
         
         width,height = self.img_only.size
@@ -476,7 +503,6 @@ class MainPage(tk.Frame):
         ymin_adj = height - ymax
         
         return xmin, ymin_adj, xmax, ymax_adj
-        
     
     def im_trim(self,mode):
                 
@@ -533,6 +559,9 @@ class MainPage(tk.Frame):
             self.img_only = self.img_only.crop((xmin, ymin_adj, xmax, ymax_adj))
             self.img_array = np.asarray(self.img_only)
         
+        self.img_only_t = self.img_only.copy()
+        self.img_array_t = self.img_array.copy()
+        
         #update popup text with new image shape
         self.refresh_ranges()
         
@@ -540,12 +569,12 @@ class MainPage(tk.Frame):
     def im_trim_auto(self):
         
         self.im_trim(mode='auto')
-        self.draw_im_canvas()
+        self.draw_im_canvas(self.img_array)
         
     def im_trim_manual(self):
         
         self.im_trim(mode='manual')
-        self.draw_im_canvas()
+        self.draw_im_canvas(self.img_array)
     
     #resizing the image and recreating the canvas.
     def resize_im(self):
@@ -557,6 +586,10 @@ class MainPage(tk.Frame):
             
         if self.manual:
             self.im_trim(mode='manual')
+        
+        sharp_value = float(self.popup_frame.sharp_slider.get())
+        self.img_only = self.change_sharpness(self.img_only,value=sharp_value)
+        self.img_array = np.asarray(self.img_only)
         
         self.frac_h, self.frac_w = self.get_scaling_fraction() 
         self.npixels = int(self.npx.get())
@@ -586,7 +619,7 @@ class MainPage(tk.Frame):
             self.img_only = self.img_only
         
         self.img_array = np.asarray(self.img_only)
-        self.draw_im_canvas()
+        self.draw_im_canvas(self.img_array)
         
         #update RESIZED ranges in the popup tab, if applicable (i.e., if open)
         self.refresh_ranges(resized=True)
@@ -711,9 +744,12 @@ class ParamWindow(tk.Toplevel):
         self.title("Canvas Display Paraneters")
         self.geometry(popup_geometry)
         
+        self.add_trim_widget_auto(parent)
+        self.add_trim_widget_manual(parent)
+        self.add_space(nrow=3)
+        self.add_sharpness_scroll(parent)
         
-        #add buttons, command will be parent.FUNCTION
-        
+    def add_trim_widget_auto(self,parent):
         #pixel values > threshold set to white (255), pixels < threshold set to black (0)
         threshold_lab = tk.Label(self,text='Trim Threshold',font='Arial 14')
         threshold_lab.grid(row=0,column=0,sticky='w',columnspan=1,rowspan=2)
@@ -722,11 +758,13 @@ class ParamWindow(tk.Toplevel):
                                       bg='black',fg='lime green',font='Arial 15')
         self.threshold_val.insert(0,'1')
         self.threshold_val.grid(row=0,column=1,sticky='w',columnspan=1,rowspan=2)
-        
+    
         self.trim_button = tk.Button(self,text='Auto-Trim Image',padx=2,pady=5,
                                      font='Arial 18', command=parent.im_trim_auto)
         self.trim_button.grid(row=2,column=0,columnspan=2,rowspan=1,sticky='w')
-  
+    
+    def add_trim_widget_manual(self,parent):
+
         #labels that display resized coordinate ranges
         self.xresized_lab = tk.Label(self,text='Pixelated X-Range ( , )',font='Arial 14')
         self.yresized_lab = tk.Label(self,text='Pixelated Y-Range ( , )',font='Arial 14')
@@ -739,29 +777,39 @@ class ParamWindow(tk.Toplevel):
         #lawd, the user prematurely opened the popup frame! punish them with incorrect values!
         except:
             width,height = -999,-999
-            
+   
         xrange_lab = tk.Label(self,text='(Xmin,Xmax)',font='Arial 14')
         xrange_lab.grid(row=0,column=2,sticky='e',columnspan=1)
         self.xrange_vals = tk.Entry(self,width=8,borderwidth=2,
                                     bg='black',fg='lime green',font='Arial 15')
         self.xrange_vals.insert(0,f'({0},{width})')
         self.xrange_vals.grid(row=0,column=3,sticky='e',columnspan=1)
-        
-        
+
         yrange_lab = tk.Label(self,text='(Ymin,Ymax)',font='Arial 14')
         yrange_lab.grid(row=1,column=2,sticky='e',columnspan=1)
         self.yrange_vals = tk.Entry(self,width=8,borderwidth=2,
                                     bg='black',fg='lime green',font='Arial 15')
         self.yrange_vals.insert(0,f'({0},{height})')
         self.yrange_vals.grid(row=1,column=3,sticky='e',columnspan=1)
-                
+        
+        #add the manual-trim button
         self.rangebutton = tk.Button(self,text='Manual-Trim Image',padx=2,pady=5,
                                      font='Arial 18',command=parent.im_trim_manual)
         self.rangebutton.grid(row=2,column=2,columnspan=2,sticky='e')
-
-
+    
+    def add_sharpness_scroll(self,parent):
+        self.sharp_slider = tk.Scale(self, from_=1, to=10, orient=tk.HORIZONTAL,
+                                command=lambda value: parent.change_sharpness(parent.img_only,value))
+        self.sharp_slider.grid(row=3,column=1,columnspan=2)
         
+        sharplab = tk.Label(self,text='Adjust Sharpness',font='Arial 14')
+        sharplab.grid(row=3,column=0)
+    
+    def add_space(self,nrow):
+        spacer1 = tk.Label(self,text="")
+        spacer1.grid(row=nrow, column=0,padx=5)
         
+    
             
             
             
