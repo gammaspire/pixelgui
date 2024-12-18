@@ -106,7 +106,7 @@ class MainPage(tk.Frame):
             self.frame_buttons.rowconfigure(i,weight=1)
         
         #create pixel parameter frame!
-        self.frame_params = tk.LabelFrame(self,text='Parameters',padx=5,pady=5)
+        self.frame_params = tk.LabelFrame(self,text='Pixelation Parameters',padx=5,pady=5)
         self.frame_params.grid(row=1,column=1,sticky='e',columnspan=1)
         for i in range(self.rowspan):
             self.frame_params.columnconfigure(i,weight=1)
@@ -123,6 +123,7 @@ class MainPage(tk.Frame):
     #create separate popup window for image display features (for either pre- or post- pixelation)
     def popup_params(self):
         self.popup_frame = ParamWindow(self,self.popup_geometry)
+        self.popup_frame.resizable(True, True) 
 
     #add trimming features!
     def add_param_button(self):
@@ -422,8 +423,7 @@ class MainPage(tk.Frame):
         #will only work if self.popup_frame is already defined...which requires the user to have already
         #opened the popup window!
         try:
-            #return to default sharpness
-            self.popup_frame.sharp_slider.set(1.0, 0.0)
+            self.popup_frame.sharp_slider.set(1)
         except:
             pass
         
@@ -453,13 +453,19 @@ class MainPage(tk.Frame):
             print("I don't know what to tell ye. Your width and/or height are not numbers.")
             return None
     
-    #the *args handles whatever else the tk.Scroll function generates - some miscellany which I need not.
-    def change_sharpness(self, img, value):
+    def adjust_image(self,img):
         
-        sharp_param = float(value)
-        enhancer = ImageEnhance.Sharpness(img)
-        img = enhancer.enhance(sharp_param)
+        sharp_param = float(self.popup_frame.sharp_slider.get())
+        contrast_param = float(self.popup_frame.contrast_slider.get())
         
+        if sharp_param != 1.:
+            enhancer = ImageEnhance.Sharpness(img)
+            img = enhancer.enhance(sharp_param)
+        
+        if contrast_param != 1.:
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(contrast_param)
+            
         self.draw_im_canvas(np.asarray(img))
         
         return img
@@ -563,8 +569,7 @@ class MainPage(tk.Frame):
         self.img_array_t = self.img_array.copy()
         
         #update popup text with new image shape
-        self.refresh_ranges()
-        
+        self.refresh_ranges()  
                 
     def im_trim_auto(self):
         
@@ -588,7 +593,9 @@ class MainPage(tk.Frame):
             self.im_trim(mode='manual')
         
         sharp_value = float(self.popup_frame.sharp_slider.get())
-        self.img_only = self.change_sharpness(self.img_only,value=sharp_value)
+        contrast_value = float(self.popup_frame.contrast_slider.get())
+
+        self.img_only = self.adjust_image(self.img_only)
         self.img_array = np.asarray(self.img_only)
         
         self.frac_h, self.frac_w = self.get_scaling_fraction() 
@@ -737,39 +744,50 @@ class ParamWindow(tk.Toplevel):
     def __init__(self, parent, popup_geometry):
         
         super().__init__(parent) 
-        
-        #defines the number of rows/columns to resize when resizing the entire window.
-        self.rowspan=10
-        
+                
         self.title("Canvas Display Paraneters")
         self.geometry(popup_geometry)
         
+        #add the frames
+        self.trim_frame()
+        self.sharp_frame()
+        self.range_frame()
+        
+        #add the widgets to the frames
         self.add_trim_widget_auto(parent)
         self.add_trim_widget_manual(parent)
-        self.add_space(nrow=3)
+        self.add_resized_coords()
+        self.add_spaceh(nrow=1)
         self.add_sharpness_scroll(parent)
+        self.add_contrast_scroll(parent)
+    
+    def trim_frame(self):
+        self.trim_frame=tk.LabelFrame(self,text='Trimming Parameters',font='Vendana 18',padx=15,pady=15)
+        self.trim_frame.grid(column=0,row=0,columnspan=2)
         
+    def sharp_frame(self):
+        self.sharp_frame=tk.LabelFrame(self,text='Adjustment Parameters',font='Vendana 18',padx=15,pady=15)
+        self.sharp_frame.grid(column=0,row=2,columnspan=3)
+    
+    def range_frame(self):
+        self.range_frame=tk.LabelFrame(self,text='Resized Coordinates',font='Vendana 18',padx=15,pady=15)
+        self.range_frame.grid(column=2,row=0)
+    
     def add_trim_widget_auto(self,parent):
         #pixel values > threshold set to white (255), pixels < threshold set to black (0)
-        threshold_lab = tk.Label(self,text='Trim Threshold',font='Arial 14')
+        threshold_lab = tk.Label(self.trim_frame,text='Trim Threshold',font='Arial 14')
         threshold_lab.grid(row=0,column=0,sticky='w',columnspan=1,rowspan=2)
         
-        self.threshold_val = tk.Entry(self,width=5,borderwidth=2,
+        self.threshold_val = tk.Entry(self.trim_frame,width=5,borderwidth=2,
                                       bg='black',fg='lime green',font='Arial 15')
         self.threshold_val.insert(0,'1')
         self.threshold_val.grid(row=0,column=1,sticky='w',columnspan=1,rowspan=2)
     
-        self.trim_button = tk.Button(self,text='Auto-Trim Image',padx=2,pady=5,
+        self.trim_button = tk.Button(self.trim_frame,text='Auto-Trim Image',padx=2,pady=5,
                                      font='Arial 18', command=parent.im_trim_auto)
         self.trim_button.grid(row=2,column=0,columnspan=2,rowspan=1,sticky='w')
     
     def add_trim_widget_manual(self,parent):
-
-        #labels that display resized coordinate ranges
-        self.xresized_lab = tk.Label(self,text='Pixelated X-Range ( , )',font='Arial 14')
-        self.yresized_lab = tk.Label(self,text='Pixelated Y-Range ( , )',font='Arial 14')
-        self.xresized_lab.grid(row=0,column=4,sticky='e')
-        self.yresized_lab.grid(row=1,column=4,sticky='e')
 
         #manually trim the image 
         try:
@@ -778,36 +796,56 @@ class ParamWindow(tk.Toplevel):
         except:
             width,height = -999,-999
    
-        xrange_lab = tk.Label(self,text='(Xmin,Xmax)',font='Arial 14')
+        xrange_lab = tk.Label(self.trim_frame,text='(Xmin,Xmax)',font='Arial 14')
         xrange_lab.grid(row=0,column=2,sticky='e',columnspan=1)
-        self.xrange_vals = tk.Entry(self,width=8,borderwidth=2,
+        self.xrange_vals = tk.Entry(self.trim_frame,width=8,borderwidth=2,
                                     bg='black',fg='lime green',font='Arial 15')
         self.xrange_vals.insert(0,f'({0},{width})')
         self.xrange_vals.grid(row=0,column=3,sticky='e',columnspan=1)
 
-        yrange_lab = tk.Label(self,text='(Ymin,Ymax)',font='Arial 14')
+        yrange_lab = tk.Label(self.trim_frame,text='(Ymin,Ymax)',font='Arial 14')
         yrange_lab.grid(row=1,column=2,sticky='e',columnspan=1)
-        self.yrange_vals = tk.Entry(self,width=8,borderwidth=2,
+        self.yrange_vals = tk.Entry(self.trim_frame,width=8,borderwidth=2,
                                     bg='black',fg='lime green',font='Arial 15')
         self.yrange_vals.insert(0,f'({0},{height})')
         self.yrange_vals.grid(row=1,column=3,sticky='e',columnspan=1)
         
         #add the manual-trim button
-        self.rangebutton = tk.Button(self,text='Manual-Trim Image',padx=2,pady=5,
+        self.rangebutton = tk.Button(self.trim_frame,text='Manual-Trim Image',padx=2,pady=5,
                                      font='Arial 18',command=parent.im_trim_manual)
         self.rangebutton.grid(row=2,column=2,columnspan=2,sticky='e')
+        
+    def add_resized_coords(self):
+
+        #labels that display resized coordinate ranges
+        self.xresized_lab = tk.Label(self.range_frame,text='Pixelated X-Range (    ,    )',font='Arial 15',
+                                    pady=14)
+        self.yresized_lab = tk.Label(self.range_frame,text='Pixelated Y-Range (    ,    )',font='Arial 15',
+                                    pady=15)
+        self.xresized_lab.grid(row=0,column=0,sticky='nsew')
+        self.yresized_lab.grid(row=1,column=0,sticky='nsew')
     
     def add_sharpness_scroll(self,parent):
-        self.sharp_slider = tk.Scale(self, from_=1, to=10, orient=tk.HORIZONTAL,
-                                command=lambda value: parent.change_sharpness(parent.img_only,value))
-        self.sharp_slider.grid(row=3,column=1,columnspan=2)
         
-        sharplab = tk.Label(self,text='Adjust Sharpness',font='Arial 14')
-        sharplab.grid(row=3,column=0)
+        sharplab = tk.Label(self.sharp_frame,text='Adjust Sharpness',font='Arial 15')
+        sharplab.grid(row=1,column=0,columnspan=1,padx=5,pady=5)
+        
+        self.sharp_slider = tk.Scale(self.sharp_frame, from_=1, to=10, orient=tk.HORIZONTAL, resolution=0.1,
+                                length=250, command=lambda value: parent.adjust_image(parent.img_only))
+        self.sharp_slider.grid(row=0,column=0,columnspan=1,padx=15)
     
-    def add_space(self,nrow):
-        spacer1 = tk.Label(self,text="")
-        spacer1.grid(row=nrow, column=0,padx=5)
+    def add_contrast_scroll(self,parent):
+        
+        contrastlab = tk.Label(self.sharp_frame,text='Adjust Contrast',font='Arial 15')
+        contrastlab.grid(row=1,column=1,pady=5,padx=5)
+        
+        self.contrast_slider = tk.Scale(self.sharp_frame, from_=1, to=10, orient=tk.HORIZONTAL, resolution=0.1,
+                                        length=250, command=lambda value: parent.adjust_image(parent.img_only))
+        self.contrast_slider.grid(row=0,column=1,columnspan=1,padx=15)
+            
+    def add_spaceh(self,nrow):
+        spacer1 = tk.Label(self,text=" ",padx=20)
+        spacer1.grid(row=nrow,column=0)
         
     
             
