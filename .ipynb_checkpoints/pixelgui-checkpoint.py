@@ -124,6 +124,9 @@ class MainPage(tk.Frame):
     def popup_params(self):
         self.popup_frame = ParamWindow(self,self.popup_geometry)
         self.popup_frame.resizable(False, False) 
+    
+    def close_popup(self):
+        self.popup_frame.destroy()
 
     #add trimming features!
     def add_param_button(self):
@@ -430,7 +433,7 @@ class MainPage(tk.Frame):
         #will only work if self.popup_frame is already defined...which requires the user to have already
         #opened the popup window!
         try:
-            self.popup_frame.sharp_slider.set(1)
+            self.close_popup()
         except:
             pass
         
