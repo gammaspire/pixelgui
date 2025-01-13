@@ -120,10 +120,13 @@ class MainPage(tk.Frame):
         self.init_display_size()   #creates canvas frame
         self.populate_params()     #creates parameter frame
     
-    #create separate popup window for image display features (for either pre- or post- pixelation)
+    #create separate popup window for image display features, intended for pre-pixelation
     def popup_params(self):
         self.popup_frame = ParamWindow(self,self.popup_geometry)
-        self.popup_frame.resizable(True, True) 
+        self.popup_frame.resizable(False, False) 
+    
+    def close_popup(self):
+        self.popup_frame.destroy()
 
     #add trimming features!
     def add_param_button(self):
@@ -370,6 +373,9 @@ class MainPage(tk.Frame):
 
         self.img_only = Image.open(full_filepath).convert('RGBA')
         self.img_array = np.asarray(self.img_only)
+        
+        #save the ORIGINAL image's width and height; will need for trimming.
+        self.width_og, self.height_og = self.img_only.size
     
     #setting up file variables
     def img_firstpass(self):
@@ -420,10 +426,14 @@ class MainPage(tk.Frame):
         self.npx.delete(0,tk.END)
         self.npx.insert(0,'50')
         
+        #reset/initiate x, y shift parameters (need for trimming!)
+        self.xshifts=0
+        self.yshifts=0
+        
         #will only work if self.popup_frame is already defined...which requires the user to have already
         #opened the popup window!
         try:
-            self.popup_frame.sharp_slider.set(1)
+            self.close_popup()
         except:
             pass
         
@@ -485,7 +495,7 @@ class MainPage(tk.Frame):
             return
     
     #change range inputs in the tkinter textboxes from strings to integers
-    def integerize_ranges(self):
+    def integerize_ranges(self,resize_version=False):
         
         width,height = self.img_only.size
         
@@ -503,14 +513,32 @@ class MainPage(tk.Frame):
         #isolate the maximum value (ind+1 to skip the ',', len(string)-1 bypasses the ')')
         xmax = int(xvals[space_indx+1:len(xvals)-1])
         ymax = int(yvals[space_indy+1:len(yvals)-1])
-
+        
+        if resize_version:
+            xmin = xmin+self.xshifts
+            ymin = ymin+self.yshifts
+            xmax = xmax+self.xshifts
+            ymax = ymax+self.yshifts
+        
         #adjust so that origin is bottom left, not top left
         ymax_adj = height - ymin
         ymin_adj = height - ymax
         
+        #update trim coordinates made to ORIGINAL image (e.g., (40,60) and not (0,20) as will be displayed
+        #after refresh_ranges())
+        #coordinate transform here is 40...so (40-40, 60-20) --> (0,20)
+        #do the same for the y's. 
+        #THE ONLY VARIABLES I NEED, THEN ARE THE STARTING XMIN AND YMIN TRIMS. AND EACH SUBSEQUENT SHIFT 
+        #TO ZERO FROM THERE.
+        #xshifts = first_shift + second_shift + ...
+        #yshifts = first_shift + second_shift + ...
+        if not resize_version:
+            self.xshifts += xmin
+            self.yshifts += ymin
+
         return xmin, ymin_adj, xmax, ymax_adj
     
-    def im_trim(self,mode):
+    def im_trim(self,mode,resize_version=False):
                 
         if mode=='auto':
             self.auto=True
@@ -553,9 +581,14 @@ class MainPage(tk.Frame):
             self.manual=True
             self.auto=False
             
+            #the resize_version indicates whether I need to shift to the original coordinate system!
+            #(otherwise, the trimmed original image will isolate the incorrect areas)
             try:
-                xmin, ymin_adj, xmax, ymax_adj = self.integerize_ranges()
-            
+                if resize_version:
+                    xmin, ymin_adj, xmax, ymax_adj = self.integerize_ranges(resize_version)
+                else:
+                    xmin, ymin_adj, xmax, ymax_adj = self.integerize_ranges()
+                    
             except:
                 print('Error reading coordinate ranges. Defaulting to original image dimensions.')
                 xmin,xmax = 0, self.img_array.shape[0]
@@ -587,7 +620,7 @@ class MainPage(tk.Frame):
             self.im_trim(mode='auto')
             
         if self.manual:
-            self.im_trim(mode='manual')
+            self.im_trim(mode='manual',resize_version=True)
         
         sharp_value = float(self.popup_frame.sharp_slider.get())
         contrast_value = float(self.popup_frame.contrast_slider.get())

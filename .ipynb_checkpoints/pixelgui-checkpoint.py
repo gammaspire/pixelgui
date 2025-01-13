@@ -465,8 +465,13 @@ class MainPage(tk.Frame):
     
     def adjust_image(self,img):
         
-        sharp_param = float(self.popup_frame.sharp_slider.get())
-        contrast_param = float(self.popup_frame.contrast_slider.get())
+        #if popup not initiated, then assign default values (1.) to sharp, contrast params
+        try:
+            sharp_param = float(self.popup_frame.sharp_slider.get())
+            contrast_param = float(self.popup_frame.contrast_slider.get())
+        except:
+            sharp_param = 1.0
+            contrast_param = 1.0
         
         if sharp_param != 1.:
             enhancer = ImageEnhance.Sharpness(img)
@@ -622,9 +627,14 @@ class MainPage(tk.Frame):
         if self.manual:
             self.im_trim(mode='manual',resize_version=True)
         
-        sharp_value = float(self.popup_frame.sharp_slider.get())
-        contrast_value = float(self.popup_frame.contrast_slider.get())
-
+        #if popup not initiated, set sharp, contrast params to default values (1.0)
+        try:
+            sharp_value = float(self.popup_frame.sharp_slider.get())
+            contrast_value = float(self.popup_frame.contrast_slider.get())
+        except:
+            sharp_value = 1.0
+            contrast_value = 1.0
+        
         self.img_only = self.adjust_image(self.img_only)
         self.img_array = np.asarray(self.img_only)
         
