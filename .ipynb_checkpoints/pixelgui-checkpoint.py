@@ -660,8 +660,30 @@ class MainPage(tk.Frame):
             else:
                 #otherwise, proceed as normal. :-)
                 ncol = int(self.ncolor.get())
-                self.img_only = self.img_only.quantize(colors=ncol,method=2,kmeans=ncol)
-                self.img_only = self.img_only.convert('RGBA')  #for the case where L is the image type
+                
+                img_rgb = self.img_only.convert("RGB")  #extract RGB channels for quantization
+                img_alpha = self.img_only.getchannel("A") #preserve alpha channel
+                
+                #background_color = img_rgb.getpixel((0, 0))  # Assumes top-left is background
+                #background_mask = ImageChops.difference(img_rgb, Image.new("RGB", img_rgb.size, background_color))
+                #background_mask = background_mask.convert("L").point(lambda p: p > 0 and 255)  # Create a mask
+                
+                # Step 3: Apply quantization
+                #quantized_rgb = img_rgb.quantize(colors=ncol)
+
+                # Step 4: Restore background to its original color
+                #quantized_rgb = quantized_rgb.convert("RGB")
+                #quantized_rgb.paste(background_color, mask=background_mask)
+
+                # Step 5: Reapply alpha channel
+                #self.img_only = quantized_rgb.convert("RGBA")
+                #self.img_only.putalpha(img_alpha)
+                
+                self.img_only = img_rgb.quantize(colors=ncol)#,method=2,kmeans=ncol)
+                self.img_only = self.img_only.convert("RGBA")
+                self.img_only.putalpha(img_alpha)
+                
+                #self.img_only = self.img_only.convert('RGBA')  #for the case where L is the image type
         except:
             self.img_only = self.img_only
         

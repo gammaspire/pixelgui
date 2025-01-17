@@ -660,8 +660,18 @@ class MainPage(tk.Frame):
             else:
                 #otherwise, proceed as normal. :-)
                 ncol = int(self.ncolor.get())
-                self.img_only = self.img_only.quantize(colors=ncol,method=2,kmeans=ncol)
-                self.img_only = self.img_only.convert('RGBA')  #for the case where L is the image type
+                
+                #first...separate the rgb and alpha channels
+                img_rgb = self.img_only.convert("RGB")  #extract RGB channels for quantization
+                img_alpha = self.img_only.getchannel("A") #preserve alpha channel
+                
+                #quantize accordingly!
+                self.img_only = img_rgb.quantize(colors=ncol)
+                #
+                self.img_only = self.img_only.convert("RGBA")
+                self.img_only.putalpha(img_alpha)
+                
+                #self.img_only = self.img_only.convert('RGBA')  #for the case where L is the image type
         except:
             self.img_only = self.img_only
         
