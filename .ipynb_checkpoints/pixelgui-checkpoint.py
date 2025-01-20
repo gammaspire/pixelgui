@@ -661,25 +661,13 @@ class MainPage(tk.Frame):
                 #otherwise, proceed as normal. :-)
                 ncol = int(self.ncolor.get())
                 
+                #first...separate the rgb and alpha channels
                 img_rgb = self.img_only.convert("RGB")  #extract RGB channels for quantization
                 img_alpha = self.img_only.getchannel("A") #preserve alpha channel
                 
-                #background_color = img_rgb.getpixel((0, 0))  # Assumes top-left is background
-                #background_mask = ImageChops.difference(img_rgb, Image.new("RGB", img_rgb.size, background_color))
-                #background_mask = background_mask.convert("L").point(lambda p: p > 0 and 255)  # Create a mask
-                
-                # Step 3: Apply quantization
-                #quantized_rgb = img_rgb.quantize(colors=ncol)
-
-                # Step 4: Restore background to its original color
-                #quantized_rgb = quantized_rgb.convert("RGB")
-                #quantized_rgb.paste(background_color, mask=background_mask)
-
-                # Step 5: Reapply alpha channel
-                #self.img_only = quantized_rgb.convert("RGBA")
-                #self.img_only.putalpha(img_alpha)
-                
-                self.img_only = img_rgb.quantize(colors=ncol)#,method=2,kmeans=ncol)
+                #quantize accordingly!
+                self.img_only = img_rgb.quantize(colors=ncol)
+                #
                 self.img_only = self.img_only.convert("RGBA")
                 self.img_only.putalpha(img_alpha)
                 
@@ -777,14 +765,23 @@ class MainPage(tk.Frame):
     
             #set y gridlines
             for n in range(0,np.shape(self.img_array)[0],line_spacing):
-                line = self.ax.axhline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
+                if (n+1)%10==0:
+                    line = self.ax.axhline(n+offset,lw=line_thickness+0.7,color=user_color,alpha=1)
+                else:
+                    line = self.ax.axhline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
                 self.xlines.append(line)
 
             #set x gridlines
             for n in range(0,np.shape(self.img_array)[1],line_spacing):
-                line = self.ax.axvline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
+                if (n+1)%10==0:
+                    line = self.ax.axvline(n+offset,lw=line_thickness+0.7,color=user_color,alpha=1)
+                else:
+                    line = self.ax.axvline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
                 self.ylines.append(line)    
-                    
+            
+            for spine in self.ax.spines.values():
+                spine.set_linewidth(line_thickness+0.7)
+            
             self.ax.tick_params(labelsize=15)
             self.ax.set_xticks(self.xticks,labels=self.xlabels,fontsize=15)
             self.ax.set_yticks(self.yticks,labels=self.ylabels,fontsize=15)

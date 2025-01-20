@@ -765,14 +765,23 @@ class MainPage(tk.Frame):
     
             #set y gridlines
             for n in range(0,np.shape(self.img_array)[0],line_spacing):
-                line = self.ax.axhline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
+                if (n+1)%10==0:
+                    line = self.ax.axhline(n+offset,lw=line_thickness+0.7,color=user_color,alpha=1)
+                else:
+                    line = self.ax.axhline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
                 self.xlines.append(line)
 
             #set x gridlines
             for n in range(0,np.shape(self.img_array)[1],line_spacing):
-                line = self.ax.axvline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
+                if (n+1)%10==0:
+                    line = self.ax.axvline(n+offset,lw=line_thickness+0.7,color=user_color,alpha=1)
+                else:
+                    line = self.ax.axvline(n+offset,lw=line_thickness,color=user_color,alpha=0.6)
                 self.ylines.append(line)    
-                    
+            
+            for spine in self.ax.spines.values():
+                spine.set_linewidth(line_thickness+0.7)
+            
             self.ax.tick_params(labelsize=15)
             self.ax.set_xticks(self.xticks,labels=self.xlabels,fontsize=15)
             self.ax.set_yticks(self.yticks,labels=self.ylabels,fontsize=15)
