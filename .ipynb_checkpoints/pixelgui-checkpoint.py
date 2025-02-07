@@ -369,7 +369,7 @@ class MainPage(tk.Frame):
         self.label.grid(row=0,column=0,columnspan=4,rowspan=6,sticky='nsew')
     
     def load_image(self):
-        full_filepath = str(self.path_to_im.get())
+        self.full_filepath = str(self.path_to_im.get())
 
         self.img_only = Image.open(full_filepath).convert('RGBA')
         self.img_array = np.asarray(self.img_only)
@@ -384,7 +384,7 @@ class MainPage(tk.Frame):
 
         #add title...because why not?
         try:
-            full_filepath = full_filepath.split('/')   #split full pathname into components
+            full_filepath = self.full_filepath.split('/')   #split full pathname into components
             full_filename = full_filepath[-1]          #isolate filename
             split_filename = full_filename.split('.')  #separate image name from file extension
             self.filename = split_filename[0]
