@@ -371,7 +371,7 @@ class MainPage(tk.Frame):
     def load_image(self):
         self.full_filepath = str(self.path_to_im.get())
 
-        self.img_only = Image.open(full_filepath).convert('RGBA')
+        self.img_only = Image.open(self.full_filepath).convert('RGBA')
         self.img_array = np.asarray(self.img_only)
         
         #save the ORIGINAL image's width and height; will need for trimming.
